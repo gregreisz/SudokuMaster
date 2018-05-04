@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace SudokuMaster
@@ -12,7 +12,7 @@ namespace SudokuMaster
         public SudokuPuzzle Sdk = new SudokuPuzzle();
 
         // back color for empty cells
-        private readonly Color _defaultBackcolor = Color.White;
+        public Color DefaultBackcolor = Color.White;
 
         // colors for cells with hint values
         // these cells are not eraseable
@@ -24,25 +24,49 @@ namespace SudokuMaster
         private readonly Color _userForecolor = Color.Black;
 
         // dimension of each cell of the grid
-        private const int CellWidth = 32;
-        private const int CellHeight = 32;
+        public int CellWidth = 32;
+        public int CellHeight = 32;
 
         // offset from the top-left corner of the window
-        private const int XOffset = -20;
-        private const int YOffset = 25;
+        public int XOffset = -20;
+        public int YOffset = 25;
 
         public bool HintMode { get; set; }
 
+        // used to represent the values in the grid
+        public int[,] Actual = new int[10, 10];
+        public int[,] ActualBackup = new int[10, 10];
+        public string[,] Possible = new string[10, 10];
+
+        // used to store the state of the grid
+        public Stack<int[,]> ActualStack = new Stack<int[,]>();
+        public Stack<string[,]> PossibleStack = new Stack<string[,]>();
+
+        // indicate if the brute-force subroutine should stop
+        public bool BruteForceStop;
+
+        // has the game started
+        public bool GameStarted;
+
         public int SelectedNumber { get; set; }
 
-        public int Level { get; set; }
+        public int Level { get; set; } = 1;
 
-        public int Seconds { get; set; }
+        // stacks to keep track of all the moves
+        public Stack<string> Moves;
+
+        public Stack<string> RedoMoves;
+
+        // keep track of file name to save to
+        public string SaveFileName = string.Empty;
+
+        // used to keep track of elapsed time
+        public int Seconds;
+
 
         public Form1()
         {
             InitializeComponent();
-
         }
 
         private void BtnHint_Click(object sender, EventArgs e)
@@ -90,7 +114,8 @@ namespace SudokuMaster
             // check to see if game has even started or not
             if (!Sdk.GameStarted)
             {
-                DisplayActivity(@"Click File->New to start a new game or File->Open to load an existing game", true);
+                Console.Beep();
+                TxtActivities.Text = @"Click File->New to start a new game or File->Open to load an existing game";
                 return;
             }
 
@@ -99,18 +124,19 @@ namespace SudokuMaster
             // if cell is not erasable then exit
             if (cellLabel.IsEraseable == false)
             {
-                DisplayActivity("Selected cell is not empty", true);
+                Console.Beep();
+                TxtActivities.Text = @"This cell cannot be erased.";
                 return;
             }
 
             // determine the col and row of the selected cell
-            int col = Convert.ToInt32(cellLabel.Name.Substring(0, 1));
-            int row = Convert.ToInt32(cellLabel.Name.Substring(1, 1));
+            int col = int.Parse(cellLabel.Name.Substring(0, 1));
+            int row = int.Parse(cellLabel.Name.Substring(1, 1));
 
             try
             {
                 // If erasing a cell
-                if (SelectedNumber == 0)
+                if (Sdk.SelectedNumber == 0)
                 {
                     // if cell is empty then no need to erase
                     if (Sdk.Actual[col, row] == 0)
@@ -119,26 +145,24 @@ namespace SudokuMaster
                     }
 
                     // save the value in the array
-                    SetCell(col, row, SelectedNumber, true);
-                    DisplayActivity($"Number erased at ({col},{row})", false);
+                    SetCell(col, row, Sdk.SelectedNumber, true);
+                    TxtActivities.Text += TxtActivities.Text + Environment.NewLine + $@"Number erased at ({col},{row})";
                 }
                 else if (cellLabel.Text == string.Empty)
                 {
                     // else setting a value; check if move is valid
-                    if (!Sdk.IsMoveValid(col, row, SelectedNumber))
+                    if (!Sdk.IsMoveValid(col, row, Sdk.SelectedNumber))
                     {
-                        DisplayActivity($"Invalid move at ({col},{row})", true);
+                        TxtActivities.Text = $@"Invalid move at ({col},{row})";
                         return;
                     }
 
                     // save the value in the array
-                    SetCell(col, row, SelectedNumber, true);
-                    DisplayActivity($"Number placed at ({col},{row})", false);
+                    SetCell(col, row, Sdk.SelectedNumber, true);
+                    TxtActivities.Text = $@"Number placed at ({col},{row})";
 
                     // saves the move into the stack
-                    Sdk.Moves.Push($"{cellLabel.Name}{SelectedNumber}");
-
-                    //Dim possible = CalculatePossibleValues(col, row)
+                    Sdk.Moves.Push($"{cellLabel.Name}{Sdk.SelectedNumber}");
 
                     if (!Sdk.IsPuzzleSolved())
                     {
@@ -156,16 +180,40 @@ namespace SudokuMaster
             }
         }
 
-        private void ClearBoard()
+        public void CheckCandidates()
+        {
+            string pattern = "123456789";
+
+            // check row by row in grid
+            foreach (var r in Enumerable.Range(1,9))
+            {
+                // check column by column in grid
+                foreach (var c in Enumerable.Range(1,9))
+                {   
+                    // check row by row in minigrids
+                    foreach (var rr in Enumerable.Range(1,9))
+                    {
+                        // check by column by column in minigrids
+                        foreach (var cc in Enumerable.Range(1,9))
+                        {
+                            pattern = pattern.Replace(Convert.ToString(Actual[c + cc, r + rr].ToString()),
+                                string.Empty);
+                        }
+                    }
+                }
+            }
+        }
+
+        public void ClearBoard()
         {
             // initialize the stacks
-            Sdk.Moves = new Stack<string>();
-            Sdk.RedoMoves = new Stack<string>();
+            Moves = new Stack<string>();
+            RedoMoves = new Stack<string>();
 
             // initialize the cells in the board
-            foreach (var row in Enumerable.Range(1,9))
+            foreach (var row in Enumerable.Range(1, 9))
             {
-                foreach (var col in Enumerable.Range(1,9))
+                foreach (var col in Enumerable.Range(1, 9))
                 {
                     SetCell(col, row, 0, true);
                 }
@@ -232,13 +280,13 @@ namespace SudokuMaster
 
             // create the Tools menu
             var toolsItem = new ToolStripMenuItem("&Tools");
-            var ValuesToolStripMenuItem = new ToolStripMenuItem("Check &Values");
-            ValuesToolStripMenuItem.Click += ValuesToolStripMenuItem_Click;
+            var CandidatesToolStripMenuItem = new ToolStripMenuItem("Check &Candidates");
+            CandidatesToolStripMenuItem.Click += CandidatesToolStripMenuItem_Click;
 
             var PossiblesToolStripMenuItem = new ToolStripMenuItem("Check &Possibles");
             PossiblesToolStripMenuItem.Click += PossiblesToolStripMenuItem_Click;
 
-            toolsItem.DropDownItems.Add(ValuesToolStripMenuItem);
+            toolsItem.DropDownItems.Add(CandidatesToolStripMenuItem);
             toolsItem.DropDownItems.Add(PossiblesToolStripMenuItem);
 
             // create the Help menu
@@ -254,22 +302,8 @@ namespace SudokuMaster
             menuStrip1.Items.Add(helpItem);
         }
 
-        public void DisplayActivity(string str, bool soundBeep)
-        {
-            if (soundBeep)
-            {
-                Console.Beep();
-            }
-
-            TxtActivities.Text += $@"{str}{Environment.NewLine}";
-        }
-
         public void DrawBoard()
         {
-            // default selected number is 1
-            toolStripButton1.Checked = true;
-            SelectedNumber = 1;
-
             // used to store the location of the cell
             var location = new Point();
 
@@ -288,7 +322,7 @@ namespace SudokuMaster
                         Width = CellWidth,
                         Height = CellHeight,
                         TextAlign = ContentAlignment.MiddleCenter,
-                        BackColor = _defaultBackcolor
+                        BackColor = DefaultBackcolor
                     };
                     label.Font = new Font(label.Font, label.Font.Style | FontStyle.Bold);
                     label.IsEraseable = true;
@@ -300,8 +334,6 @@ namespace SudokuMaster
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            //TopMost = true;
-
             // initialize the status bar
             toolStripStatusLabel1.Text = string.Empty;
             toolStripStatusLabel2.Text = string.Empty;
@@ -317,12 +349,8 @@ namespace SudokuMaster
             toolStripButton9.Click += ToolStripButton_Click;
             toolStripButton10.Click += ToolStripButton_Click;
 
-
-            // creates the main menu
             CreateMenu();
 
-
-            // draw the board
             DrawBoard();
         }
 
@@ -333,7 +361,7 @@ namespace SudokuMaster
             // draw the horizontal lines
             var x1 = 1 * (CellWidth + 1) + XOffset - 1;
             var x2 = 9 * (CellWidth + 1) + XOffset + CellWidth;
-            foreach (int r in Enumerable.Range(1, 10).Where(r => r % 3 == 0))
+            for (int r = 1; r <= 10; r += 3)
             {
                 y1 = r * (CellHeight + 1) + YOffset - 1;
                 y2 = y1;
@@ -343,7 +371,7 @@ namespace SudokuMaster
             // draw the vertical lines
             y1 = 1 * (CellHeight + 1) + YOffset - 1;
             y2 = 9 * (CellHeight + 1) + YOffset + CellHeight;
-            foreach (int c in Enumerable.Range(1, 10).Where(c => c % 3 == 0))
+            for (int c = 1; c <= 10; c += 3)
             {
                 x1 = c * (CellWidth + 1) + XOffset - 1;
                 x2 = x1;
@@ -356,28 +384,6 @@ namespace SudokuMaster
             Sdk.CheckPossibles();
         }
 
-        private void SetLevel(string itemName)
-        {
-            switch (itemName)
-            {
-                case "EasyToolStripMenuItem":
-                    Level = 1;
-                    break;
-                case "MediumToolStripMenuItem":
-                    Level = 2;
-                    break;
-                case "HardToolStripMenuItem":
-                    Level = 3;
-                    break;
-                case "ExpertToolStripMenuItem":
-                    Level = 4;
-                    break;
-                default:
-                    Level = 0;
-                    break;
-            }
-        }
-
         private void SetCheckedOrNotChecked(ToolStripMenuItem menuItem)
         {
             foreach (ToolStripMenuItem item in menuStrip1.Items)
@@ -386,7 +392,7 @@ namespace SudokuMaster
 
                 foreach (ToolStripMenuItem subItem in item.DropDownItems)
                 {
-                   subItem.Checked = subItem.Name == menuItem.Name;
+                    subItem.Checked = subItem.Name == menuItem.Name;
                 }
             }
         }
@@ -399,7 +405,7 @@ namespace SudokuMaster
                 throw new ArgumentNullException(nameof(menuItem));
             }
 
-            SetLevel(menuItem.Name);
+            Sdk.SetLevel(menuItem.Name);
             SetCheckedOrNotChecked(menuItem);
         }
 
@@ -411,7 +417,7 @@ namespace SudokuMaster
                 throw new ArgumentNullException(nameof(menuItem));
             }
 
-            SetLevel(menuItem.Name);
+            Sdk.SetLevel(menuItem.Name);
             SetCheckedOrNotChecked(menuItem);
         }
 
@@ -443,7 +449,7 @@ namespace SudokuMaster
                 throw new ArgumentNullException(nameof(menuItem));
             }
 
-            SetLevel(menuItem.Name);
+            Sdk.SetLevel(menuItem.Name);
             SetCheckedOrNotChecked(menuItem);
         }
 
@@ -455,13 +461,13 @@ namespace SudokuMaster
                 throw new ArgumentNullException(nameof(menuItem));
             }
 
-            SetLevel(menuItem.Name);
+            Sdk.SetLevel(menuItem.Name);
             SetCheckedOrNotChecked(menuItem);
         }
 
         private void NewToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (Sdk.GameStarted)
+            if (GameStarted)
             {
                 const string message = "Do you want to save current game?";
                 const string caption = "Save current game";
@@ -478,17 +484,24 @@ namespace SudokuMaster
                 }
             }
 
-            // Change to the hourglass cursor
+            // change to the hourglass cursor
             Cursor.Current = Cursors.WaitCursor;
             toolStripStatusLabel1.Text = @"Generating new puzzle...";
 
-            // create an instance of the SudokuPuzzle class
             var puzzle = Sdk.GetPuzzle(Level);
 
-            // Change back to the default cursor
+            // change back to the default cursor
             Cursor.Current = Cursors.Default;
 
-            StartNewGame();
+            // start new game
+            SaveFileName = string.Empty;
+            TxtActivities.Text = string.Empty;
+            Seconds = 0;
+            ClearBoard();
+            GameStarted = true;
+            timer1.Enabled = true;
+            toolStripStatusLabel1.Text = @"New game started";
+            toolTip1.RemoveAll();
 
             // initialize the board
             var counter = 0;
@@ -507,7 +520,7 @@ namespace SudokuMaster
 
         private void OpenToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (Sdk.GameStarted)
+            if (GameStarted)
             {
                 const string message = "Do you want to save current game?";
                 const string caption = "Save current game";
@@ -536,7 +549,7 @@ namespace SudokuMaster
             {
                 fileContents = File.ReadAllText(openFileDialog1.FileName);
                 toolStripStatusLabel1.Text = openFileDialog1.FileName;
-                Sdk.SaveFileName = openFileDialog1.FileName;
+                SaveFileName = openFileDialog1.FileName;
 
             }
             else
@@ -544,7 +557,15 @@ namespace SudokuMaster
                 return;
             }
 
-            StartNewGame();
+            // start the game
+            SaveFileName = string.Empty;
+            TxtActivities.Text = string.Empty;
+            Seconds = 0;
+            ClearBoard();
+            GameStarted = true;
+            timer1.Enabled = true;
+            toolStripStatusLabel1.Text = @"New game started";
+            toolTip1.RemoveAll();
 
             // initialize the board
             int counter = 0;
@@ -573,38 +594,26 @@ namespace SudokuMaster
         private void RedoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // if no more next move, then exit
-            if (Sdk.RedoMoves.Count == 0) return;
+            if (RedoMoves.Count == 0) return;
 
             // remove from one stack and push into the moves stack
-            var str = Sdk.RedoMoves.Pop();
-            Sdk.Moves.Push(str);
+            var str = RedoMoves.Pop();
+            Moves.Push(str);
 
             // save the value in the array
             SetCell(int.Parse(str[0].ToString()), int.Parse(str[1].ToString()), int.Parse(str[2].ToString()), true);
-            DisplayActivity($"Value reinserted at ({int.Parse(str[0].ToString())},{int.Parse(str[1].ToString())})", false);
-
+            TxtActivities.Text = TxtActivities.Text + Environment.NewLine + $@"Value reinserted at ({int.Parse(str[0].ToString())},{int.Parse(str[1].ToString())})";
         }
 
         private void SaveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!Sdk.GameStarted)
+            if (!GameStarted)
             {
-                DisplayActivity(@"Game not started yet.", false);
+                TxtActivities.Text = @"Game not started yet.";
                 return;
             }
 
             TxtActivities.Text = Sdk.SaveGameToDisk(false);
-        }
-
-        private void SaveAsToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (!Sdk.GameStarted)
-            {
-                DisplayActivity("Game not started yet.", true);
-                return;
-            }
-
-            Sdk.SaveGameToDisk(true);
         }
 
         public void SetCell(int col, int row, int value, bool eraseable)
@@ -618,7 +627,7 @@ namespace SudokuMaster
             }
 
             // save the value in the array
-            Sdk.Actual[col, row] = value;
+            Actual[col, row] = value;
 
             // if erasing a cell, you need to reset the possible values for all cells
             if (value == 0)
@@ -627,16 +636,16 @@ namespace SudokuMaster
                 {
                     foreach (var c in Enumerable.Range(1, 9))
                     {
-                        if (Sdk.Actual[c, r] == 0)
+                        if (Actual[c, r] == 0)
                         {
-                            Sdk.Possible[c, r] = string.Empty;
+                            Possible[c, r] = string.Empty;
                         }
                     }
                 }
             }
             else
             {
-                Sdk.Possible[col, row] = value.ToString();
+                Possible[col, row] = value.ToString();
             }
 
             // set the appearance for the Label control
@@ -644,7 +653,7 @@ namespace SudokuMaster
             {
                 cellLabel.Text = string.Empty;
                 cellLabel.IsEraseable = eraseable;
-                cellLabel.BackColor = _defaultBackcolor;
+                cellLabel.BackColor = DefaultBackcolor;
             }
             // means default puzzle values
             else
@@ -666,6 +675,18 @@ namespace SudokuMaster
             }
         }
 
+        private void SaveAsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!GameStarted)
+            {
+                Console.Beep();
+                TxtActivities.Text = @"Game not started yet.";
+                return;
+            }
+
+            Sdk.SaveGameToDisk(true);
+        }
+
         public void SetToolTip(int col, int row, string possiblevalues)
         {
             // Locate the particular Label control
@@ -679,36 +700,24 @@ namespace SudokuMaster
             toolTip1.SetToolTip((CustomLabel)control, possiblevalues);
         }
 
-        public void StartNewGame()
-        {
-            Sdk.SaveFileName = string.Empty;
-            TxtActivities.Text = string.Empty;
-            Seconds = 0;
-            ClearBoard();
-            Sdk.GameStarted = true;
-            timer1.Enabled = true;
-            toolStripStatusLabel1.Text = @"New game started";
-            toolTip1.RemoveAll();
-        }
-
         private void Timer1_Tick(object sender, EventArgs e)
         {
             int ss = Seconds;
-            var mm = ss % 60;
+            int mm;
 
-            if (ss >= 3600)
+            if (ss >= 3600 && ss < 219600)
             {
-                ss = ss % 60;
-                mm = ss % 3600;
-                int hh = ss % 219600;
+                ss = Seconds % 60;
+                mm = Seconds / 3600;
+                int hh = Seconds / 219600;
 
                 toolStripStatusLabel2.Text = $@"Elapsed time: {hh} hour(s) {mm} minute(s) {ss} second(s)";
             }
 
             else if (ss >= 60 && ss < 3600)
             {
-                ss = ss % 60;
-
+                ss = Seconds % 60;
+                mm = Seconds / 60;
                 toolStripStatusLabel2.Text = $@"Elapsed time: {mm} minute(s) {ss} second(s)";
 
             }
@@ -734,30 +743,30 @@ namespace SudokuMaster
             selectedButton.Checked = true;
 
             // set the appropriate number selected
-            Sdk.SelectedNumber = selectedButton.Text == @"Erase" ? 0 : int.Parse(selectedButton.Text);
+            SelectedNumber = selectedButton.Text == @"Erase" ? 0 : int.Parse(selectedButton.Text);
 
         }
 
         private void UndoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // if no previous moves, then exit
-            if (Sdk.Moves.Count == 0)
+            if (Moves.Count == 0)
             {
                 return;
             }
 
             // remove from one stack and push into the redo stack
-            var str = Sdk.Moves.Pop();
-            Sdk.RedoMoves.Push(str);
+            var str = Moves.Pop();
+            RedoMoves.Push(str);
 
             // save the value in the array
             SetCell(int.Parse(str[0].ToString()), int.Parse(str[1].ToString()), 0, true);
-            DisplayActivity($"Value removed at ({int.Parse(str[0].ToString())},{int.Parse(str[1].ToString())})", false);
+            TxtActivities.Text = TxtActivities.Text + Environment.NewLine + $@"Value removed at ({int.Parse(str[0].ToString())},{int.Parse(str[1].ToString())})";
         }
 
-        private void ValuesToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CandidatesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            TxtActivities.Text = Sdk.CheckValues();
+            CheckCandidates();
         }
 
         private void PossiblesToolStripMenuItem_Click(object sender, EventArgs e)
