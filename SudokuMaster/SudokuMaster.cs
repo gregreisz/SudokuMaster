@@ -14,81 +14,147 @@ namespace SudokuMaster
 
     public class SudokuPuzzle
     {
-        private string CalculatePossibleValues(int col, int row)
+        public int SelectedNumber { get; set; }
+
+        public int SelectedColumn { get; set; } = 1;
+
+        public int SelectedRow { get; set; } = 1;
+
+        public string CalculatePossibleValues(int col, int row, string[,] possible, int[,] actual)
         {
-            var str = Possible[col, row] == string.Empty ? "123456789" : Possible[col, row];
+            var s = string.Empty;
+            s = possible[col, row] == string.Empty ? "123456789" : possible[col, row];
 
             int r;
             int c;
 
             // Step (1) check by column
             for (r = 1; r <= 9; r++)
-                if (Actual[col, r] != 0)
+                if (actual[col, r] != 0)
                 {
                     // that means there is a actual value in it
-                    str = str.Replace(Convert.ToString(Actual[col, r].ToString()), string.Empty);
+                    s = s.Replace(actual[col, r].ToString(), string.Empty);
                 }
 
             // Step (2) check by row
             for (c = 1; c <= 9; c++)
-                if (Actual[c, row] != 0)
+                if (actual[c, row] != 0)
                 {
                     // that means there is a actual value in it
-                    str = str.Replace(Convert.ToString(Actual[c, row].ToString()), string.Empty);
+                    s = s.Replace(actual[c, row].ToString(), string.Empty);
                 }
 
             // Step (3) check within the minigrid
             var startC = col - (col - 1) % 3;
             var startR = row - (row - 1) % 3;
             for (var rr = startR; rr <= startR + 2; rr++)
+            {
                 for (var cc = startC; cc <= startC + 2; cc++)
-                    if (Actual[cc, rr] != 0)
+                {
+                    if (actual[cc, rr] != 0)
                     {
-                        str = str.Replace(Convert.ToString(Actual[cc, rr].ToString()), string.Empty);
+                        s = s.Replace(actual[cc, rr].ToString(), string.Empty);
                     }
+                }
+            }
 
             // if possible value is string.Empty, then error
-            if (str == string.Empty)
+            if (s == string.Empty)
             {
                 throw new Exception("Invalid Move");
             }
-
-            return str;
+            return s;
         }
 
-        private bool CheckColumnsAndRows()
+        public string CheckCandidates(int col, int row, string[,] possible)
+        {
+            string pattern = "123456789";
+
+            int min = 0;
+            int max = 0;
+
+            // check row by row in grid
+            foreach (var r in Enumerable.Range(1, 9))
+            {
+                // check column by column in grid
+                foreach (var c in Enumerable.Range(1, 9))
+                {
+                    if (r == row || c == col)
+                    {
+                        if (possible[c, r].ToString() != string.Empty)
+                        {
+                            pattern = pattern.Replace(possible[c, r], string.Empty);
+                        }
+                    }
+                    if (row >= 1 && row <= 3 && col >= 1 && col <= 3)
+                    {
+                        min = 1; max = 3;
+                    }
+                    else if (row >= 4 && row <= 6 && col >= 4 && col <= 6)
+                    {
+                        min = 4; max = 6;
+                    }
+                    else if (row >= 7 && row <= 9 && col >= 7 && col <= 9)
+                    {
+                        min = 7; max = 9;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                    // check row by row in minigrids
+                    foreach (var rr in Enumerable.Range(min, max).Where(rr => rr >= min && rr <= max))
+                    {
+                        // check by column by column in minigrids
+                        foreach (var cc in Enumerable.Range(min, max).Where(cc => cc >= min && cc <= max))
+                        {
+                            if (possible[cc, rr].ToString() != string.Empty)
+                            {
+                                pattern = pattern.Replace(possible[cc, rr], string.Empty);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return pattern;
+        }
+
+        public bool CheckColumnsAndRows()
         {
             var changes = false;
-            var Form2 = new Form1();
-            // check all cells
-            for (var row = 1; row <= 9; row++)
+            using (var Form2 = new Form1())
             {
-                for (var col = 1; col <= 9; col++)
+                // check all cells
+                for (var row = 1; row <= 9; row++)
                 {
-                    if (Form2.Actual[col, row] != 0)
+                    for (var col = 1; col <= 9; col++)
                     {
-                        continue;
-                    }
+                        if (Form2.Actual[col, row] != 0)
+                        {
+                            continue;
+                        }
 
-                    try
-                    {
-                        Form2.Possible[col, row] = CalculatePossibleValues(col, row);
-                    }
-                    catch (Exception)
-                    {
-                        throw new Exception("Invalid Move");
-                    }
+                        try
+                        {
+                            Form2.Possible[col, row] = CalculatePossibleValues(col, row, Form2.Possible, Form2.Actual);
+                        }
+                        catch (Exception)
+                        {
+                            throw new Exception("Invalid Move");
+                        }
 
-                    if (Form2.Possible[col, row].Length != 1)
-                    {
-                        continue;
+                        if (Form2.Possible[col, row].Length != 1)
+                        {
+                            continue;
+                        }
+
+                        // number is confirmed
+                        Form2.Actual[col, row] = int.Parse(Form2.Possible[col, row]);
+                        changes = true;
+
+                        // accumulate the total score
                     }
-
-                    // number is confirmed
-                    Form2.Actual[col, row] = int.Parse(Form2.Possible[col, row]);
-                    changes = true;
-
-                    // accumulate the total score
                 }
             }
 
@@ -98,16 +164,18 @@ namespace SudokuMaster
 
         public string CheckPossibles()
         {
-            var Form2 = new Form1();
-            // print results
             var sb = new StringBuilder();
-            foreach (var row in Enumerable.Range(1, 9))
+            using (var Form2 = new Form1())
             {
-                foreach (var col in Enumerable.Range(1, 9))
+                // print results
+                foreach (var row in Enumerable.Range(1, 9))
                 {
-                    sb.Append(Form2.Possible[col, row] != null && Form2.Possible[col, row].Length > 0 ? $"{Form2.Possible[col, row]}" : " ");
+                    foreach (var col in Enumerable.Range(1, 9))
+                    {
+                        sb.Append(Form2.Possible[col, row] != null && Form2.Possible[col, row].Length > 0 ? $"{Form2.Possible[col, row]}" : " ");
+                    }
+                    sb.AppendLine();
                 }
-                sb.AppendLine();
             }
 
             return sb.ToString();
@@ -115,16 +183,18 @@ namespace SudokuMaster
 
         public string CheckValues()
         {
-            var Form2 = new Form1();
-            // print results
             var sb = new StringBuilder();
-            for (int row = 1; row <= 9; row++)
+            using (var Form2 = new Form1())
             {
-                for (int col = 1; col <= 9; col++)
+                foreach (int row in Enumerable.Range(1, 9))
                 {
-                    sb.Append(Form2.Possible[col, row] != null ? $"{Form2.Possible[col, row]} " : $"{Form2.Actual[col, row]} ");
+                    for (int col = 1; col <= 9; col++)
+                    {
+                        sb.Append(Form2.Possible[col, row] != null ? $"{Form2.Possible[col, row]} " : $"{Form2.Actual[col, row]} ");
+                    }
+                    sb.AppendLine();
                 }
-                sb.AppendLine();
+
             }
             return sb.ToString();
         }
@@ -171,8 +241,8 @@ namespace SudokuMaster
                     emptyCells[i] = $"{c}{r}";
                     var Form2 = new Form1
                     {
-                        Actual = {[c, r] = 0},
-                        Possible = {[c, r] = string.Empty}
+                        Actual = { [c, r] = 0 },
+                        Possible = { [c, r] = string.Empty }
                     };
 
 
@@ -184,19 +254,20 @@ namespace SudokuMaster
             }
         }
 
-        private void FindCellWithFewestPossibleValues(ref int col, ref int row)
+        private static void FindCellWithFewestPossibleValues(ref int col, ref int row)
         {
             var min = 10;
+            var Form2 = new Form1();
             for (var r = 1; r <= 9; r++)
             {
                 for (var c = 1; c <= 9; c++)
                 {
-                    if (Actual[c, r] != 0 || Possible[c, r].Length >= min)
+                    if (Form2.Actual[c, r] != 0 || Form2.Possible[c, r].Length >= min)
                     {
                         continue;
                     }
 
-                    min = Possible[c, r].Length;
+                    min = Form2.Possible[c, r].Length;
                     col = c;
                     row = r;
                 }
@@ -207,20 +278,20 @@ namespace SudokuMaster
         {
             var str = string.Empty;
             int empty;
-
+            var Form2 = new Form1();
             // initialize the entire board
             foreach (int row in Enumerable.Range(1, 9))
             {
                 foreach (int col in Enumerable.Range(1, 9))
                 {
-                    Actual[col, row] = 0;
-                    Possible[col, row] = string.Empty;
+                    Form2.Actual[col, row] = 0;
+                    Form2.Possible[col, row] = string.Empty;
                 }
             }
 
             // clear the stacks
-            ActualStack.Clear();
-            PossibleStack.Clear();
+            Form2.ActualStack.Clear();
+            Form2.PossibleStack.Clear();
 
             // populate the board with numbers by solving an empty grid
             try
@@ -239,7 +310,7 @@ namespace SudokuMaster
             }
 
             // make a backup copy of the _actual array
-            _actualBackup = (int[,])Actual.Clone();
+            Form2.ActualBackup = (int[,])Form2.Actual.Clone();
 
             var rnd = new Random();
 
@@ -264,9 +335,9 @@ namespace SudokuMaster
             }
 
             // clear the stacks that are used in brute-force elimination 
-            ActualStack.Clear();
-            PossibleStack.Clear();
-            BruteForceStop = false;
+            Form2.ActualStack.Clear();
+            Form2.PossibleStack.Clear();
+            Form2.BruteForceStop = false;
 
             // create empty cells
             CreateEmptyCells(empty);
@@ -276,7 +347,7 @@ namespace SudokuMaster
             {
                 foreach (var col in Enumerable.Range(1, 9))
                 {
-                    str += Convert.ToString(Actual[col, row].ToString());
+                    str += Form2.Actual[col, row].ToString();
                 }
             }
 
@@ -284,7 +355,6 @@ namespace SudokuMaster
             var tries = 0;
             do
             {
-                _totalscore = 0;
                 try
                 {
                     if (!SolvePuzzle())
@@ -324,7 +394,6 @@ namespace SudokuMaster
             endOfDoLoop:
 
             // return the score as well as the puzzle as a string
-            score = _totalscore;
             return str;
         }
 
@@ -388,13 +457,13 @@ namespace SudokuMaster
         public bool IsMoveValid(int col, int row, int value)
         {
             var isValid = true;
-
+            var Form2 = new Form1();
             try
             {
                 // scan through columns
                 foreach (var r in Enumerable.Range(1, 9))
                 {
-                    if (Actual[col, r] == value) // duplicate
+                    if (Form2.Actual[col, r] == value) // duplicate
                     {
                         isValid = false;
                     }
@@ -410,7 +479,7 @@ namespace SudokuMaster
                 // scan through rows
                 foreach (var c in Enumerable.Range(1, 9))
                 {
-                    if (Actual[c, row] == value)
+                    if (Form2.Actual[c, row] == value)
                     {
                         isValid = false;
                     }
@@ -430,7 +499,7 @@ namespace SudokuMaster
                 foreach (var rr in Enumerable.Range(0, 2))
                 {
                     foreach (var cc in Enumerable.Range(0, 2))
-                        if (Actual[startC + cc, startR + rr] == value) // duplicate
+                        if (Form2.Actual[startC + cc, startR + rr] == value) // duplicate
                         {
                             isValid = false;
                         }
@@ -747,8 +816,8 @@ namespace SudokuMaster
             int r = 1;
 
             var Form2 = new Form1();
-             // find out which cell has the smallest number of possible values
-             FindCellWithFewestPossibleValues(ref c, ref r);
+            // find out which cell has the smallest number of possible values
+            FindCellWithFewestPossibleValues(ref c, ref r);
 
             // get the possible values for the chosen cell
             string possibleValues = Form2.Possible[c, r];
@@ -1374,7 +1443,7 @@ namespace SudokuMaster
                     // scans columns in this row
                     for (var cc = 1; cc <= 9; cc++)
                         // look for other triplets
-                        if (cc != c && (Form2.Possible[cc, r] == Form2.Possible[c, r] || 
+                        if (cc != c && (Form2.Possible[cc, r] == Form2.Possible[c, r] ||
                                         Form2.Possible[cc, r].Length == 2 &&
                                         Form2.Possible[c, r].Contains(Form2.Possible[cc, r][0].ToString())) &&
                                         Form2.Possible[c, r].Contains(Form2.Possible[cc, r][1].ToString()))
@@ -1489,11 +1558,11 @@ namespace SudokuMaster
 
             // restore the value of the cell from the actual_backup array
             str = str.Remove(c - 1 + (r - 1) * 9, 1);
-            str = str.Insert(c - 1 + (r - 1) * 9, Convert.ToString(Form2.ActualBackup[c, r].ToString()));
+            str = str.Insert(c - 1 + (r - 1) * 9, Form2.ActualBackup[c, r].ToString());
 
             // restore the value of the symmetrical cell from the actual_backup array
             str = str.Remove(10 - c - 1 + (10 - r - 1) * 9, 1);
-            str = str.Insert(10 - c - 1 + (10 - r - 1) * 9, Convert.ToString(Form2.ActualBackup[10 - c, 10 - r].ToString())));
+            str = str.Insert(10 - c - 1 + (10 - r - 1) * 9, Form2.ActualBackup[10 - c, 10 - r].ToString());
 
             // look for another pair of cells to vacate
             do
