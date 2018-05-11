@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -28,25 +27,6 @@ namespace SudokuMaster
             this.form = form;
         }
 
-        // back color for empty cells
-        public Color DefaultBackcolor = Color.White;
-
-        // colors for cells with hint values
-        // these cells are not eraseable
-        public readonly Color _fixedForecolor = Color.Blue;
-        public readonly Color _fixedBackcolor = Color.LightSteelBlue;
-
-        // these colors are for user inserted values which can be erased
-        public readonly Color _userBackcolor = Color.LightYellow;
-        public readonly Color _userForecolor = Color.Black;
-
-        // dimension of each cell of the grid
-        public int CellWidth = 32;
-        public int CellHeight = 32;
-
-        // offset from the top-left corner of the window
-        public int XOffset = -20;
-        public int YOffset = 25;
 
         // used to represent the values in the grid
         public int[,] Actual = new int[10, 10];
@@ -57,27 +37,52 @@ namespace SudokuMaster
         public Stack<int[,]> ActualStack = new Stack<int[,]>();
         public Stack<string[,]> PossibleStack = new Stack<string[,]>();
 
-        // indicate if the brute-force subroutine should stop
-        public bool BruteForceStop = true;
+        // stacks to keep track of all the moves
+        public Stack<string> Moves;
+        public Stack<string> RedoMoves;
 
-        // number the user selected from the toolStrip on enter into a cell
+        #region Public Properties
 
         public int Level { get; set; } = 1;
 
-        // stacks to keep track of all the moves
-        public Stack<string> Moves;
+        public bool HintMode { get; set; } = false;
 
-        public Stack<string> RedoMoves;
-
+        // number the user selected from the toolStrip on enter into a cell
         public int SelectedNumber { get; set; } = 1;
 
         public int SelectedColumn { get; set; } = 1;
 
         public int SelectedRow { get; set; } = 1;
 
-        public string CalculatePossibleValues(int col, int row)
+        // indicate if the brute-force subroutine should stop
+        private bool _bruteForceStop;
+        private bool _gameStarted;
+        private int _seconds;
+
+        // has the game started
+        public bool GameStarted
         {
-            var s = !string.IsNullOrEmpty(Possible[col, row])? Possible[col, row]: "123456789";
+            get => _gameStarted;
+            set => _gameStarted = value;
+        }
+
+        public bool BruteForceStop
+        {
+            get => _bruteForceStop;
+            set => _bruteForceStop = value;
+        }
+
+        public int Seconds
+        {
+            get => _seconds;
+            set => _seconds = value;
+        }
+
+        #endregion
+
+        public string CalculatePossibleValues(int col, int row, bool allowEmptyString = false)
+        {
+            var s = !string.IsNullOrEmpty(Possible[col, row]) ? Possible[col, row] : "123456789";
 
             int r;
             int c;
@@ -113,19 +118,16 @@ namespace SudokuMaster
             }
 
             // if possible value is string.Empty, then error
-            if (s == string.Empty)
+            if (s == string.Empty && !allowEmptyString)
             {
                 throw new Exception("Invalid Move");
             }
             return s;
         }
 
-        public string CheckCandidates(int col, int row, string[,] possible)
+        public string[,] CheckCandidates()
         {
-            string pattern = "123456789";
-
-            int min;
-            int max;
+            var possibleValues = new string[10, 10];
 
             // check row by row in grid
             foreach (var r in Enumerable.Range(1, 9))
@@ -133,45 +135,11 @@ namespace SudokuMaster
                 // check column by column in grid
                 foreach (var c in Enumerable.Range(1, 9))
                 {
-                    if (r == row || c == col)
-                    {
-                        if (possible[c, r] != string.Empty)
-                        {
-                            pattern = pattern.Replace(possible[c, r], "-");
-                        }
-                    }
-                    if (row >= 1 && row <= 3 && col >= 1 && col <= 3)
-                    {
-                        min = 1; max = 3;
-                    }
-                    else if (row >= 4 && row <= 6 && col >= 4 && col <= 6)
-                    {
-                        min = 4; max = 6;
-                    }
-                    else if (row >= 7 && row <= 9 && col >= 7 && col <= 9)
-                    {
-                        min = 7; max = 9;
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                    // check row by row in minigrids
-                    foreach (var rr in Enumerable.Range(min, max).Where(rr => rr >= min && rr <= max))
-                    {
-                        // check by column by column in minigrids
-                        foreach (var cc in Enumerable.Range(min, max).Where(cc => cc >= min && cc <= max))
-                        {
-                            if (possible[cc, rr] != string.Empty)
-                            {
-                                pattern = pattern.Replace(possible[cc, rr], "-");
-                            }
-                        }
-                    }
+                    possibleValues[c, r] = CalculatePossibleValues(c, r, true);
                 }
             }
 
-            return pattern;
+            return possibleValues;
         }
 
         public bool CheckColumnsAndRows()
@@ -214,20 +182,30 @@ namespace SudokuMaster
             return changes;
         }
 
-        public string CheckPossibles()
+        public void GetPossiblesAndValues()
         {
-            var sb = new StringBuilder();
-            // print results
+            string cell = string.Empty;
             foreach (var row in Enumerable.Range(1, 9))
             {
                 foreach (var col in Enumerable.Range(1, 9))
                 {
-                    sb.Append(Possible[col, row] != null && Possible[col, row].Length > 0 ? $"{Possible[col, row]}" : "-");
-                }
-                sb.AppendLine();
-            }
+                    if (Possible[col, row] == null)
+                    {
+                        continue;
+                    }
+                    if (Possible[col, row].Length != 0)
+                    {
+                        cell += $"({col},{row}) {Possible[col, row]}   {CalculatePossibleValues(col, row, true)}";
+                    }
+                    else if (Possible[col, row].Length == 0)
+                    {
+                        cell += $"({col},{row}) {Actual[col, row]}   {CalculatePossibleValues(col, row, true)}";
+                    }
 
-            return sb.ToString();
+                    Form1._Form1.SetText = cell;
+                    cell = string.Empty;
+                }
+            }
         }
 
         private void CheckValues()
@@ -244,22 +222,6 @@ namespace SudokuMaster
             }
 
             Form1._Form1.SetText = sb.ToString();
-        }
-
-        public void ClearBoard()
-        {
-            // initialize the stacks
-            Moves = new Stack<string>();
-            RedoMoves = new Stack<string>();
-
-            // initialize the cells in the board
-            foreach (var row in Enumerable.Range(1, 9))
-            {
-                foreach (var col in Enumerable.Range(1, 9))
-                {
-                    SetCell(col, row, 0, true);
-                }
-            }
         }
 
         private void CreateEmptyCells(int empty)
@@ -314,36 +276,61 @@ namespace SudokuMaster
             }
         }
 
-        public void DrawBoard()
+        public void DisplayElapsedTime()
         {
-            SelectedNumber = 1;
+            int ss = Seconds;
+            int mm;
 
-            // used to store the location of the cell
-            var location = new Point();
+            var label = Form1._Form1.toolStripStatusLabel2;
 
-            // draws the cells
-            foreach (var row in Enumerable.Range(1, 9))
+            if (Seconds >= 3600 && Seconds < 219600)
             {
-                foreach (var col in Enumerable.Range(1, 9))
+                ss = Seconds % 3600;
+                mm = Seconds / 3600;
+                int hh = Seconds / 219600;
+                string elapsedTime;
+                if (mm.ToString().Length == 1)
                 {
-                    location.X = col * (CellWidth + 1) + XOffset;
-                    location.Y = row * (CellHeight + 1) + YOffset;
-                    var label = new CustomLabel
-                    {
-                        Name = col.ToString() + row,
-                        BorderStyle = BorderStyle.Fixed3D,
-                        Location = location,
-                        Width = CellWidth,
-                        Height = CellHeight,
-                        TextAlign = ContentAlignment.MiddleCenter,
-                        BackColor = DefaultBackcolor
-                    };
-                    label.Font = new Font(label.Font, label.Font.Style | FontStyle.Bold);
-                    label.IsEraseable = true;
-                    label.Click += Form1._Form1.Cell_Click;
-                    Form1._Form1.Controls.Add(label);
+                    elapsedTime = hh + ":0" + mm;
                 }
+                else
+                {
+                    elapsedTime = hh + ":" + mm;
+                }
+                if (ss.ToString().Length == 1)
+                {
+                    elapsedTime += ":0" + ss;
+                }
+                else
+                {
+                    elapsedTime += ":" + ss;
+                }
+
+                label.Text = $@"Elapsed time: {elapsedTime}";
             }
+
+            else if (ss >= 60 && ss < 3600)
+            {
+                ss = Seconds % 60;
+                mm = Seconds / 60;
+                string elapsedTime;
+                if (ss.ToString().Length == 1 && Seconds >= 60)
+                {
+                    elapsedTime = mm + ":" + "0" + ss;
+                }
+                else
+                {
+                    elapsedTime = mm + ":" + ss;
+                }
+                label.Text = $@"Elapsed time: {elapsedTime}";
+
+            }
+            else if (Seconds > 0 && Seconds < 60)
+            {
+                label.Text = $@"Elapsed time: {ss} _seconds";
+
+            }
+            Seconds += 1;
         }
 
         private void FindCellWithFewestPossibleValues(ref int col, ref int row)
@@ -1359,65 +1346,6 @@ namespace SudokuMaster
                 return null;
             }
             return $@"Puzzle saved in {form.SaveFileName}";
-        }
-
-        public void SetCell(int col, int row, int value, bool eraseable)
-        {
-            // Locate the particular Label control
-            var control = Form1._Form1.Controls.Find($"{col}{row}", true).FirstOrDefault();
-            var cellLabel = (CustomLabel)control;
-            if (cellLabel == null)
-            {
-                return;
-            }
-
-            // save the value in the array
-            Actual[col, row] = value;
-
-            // if erasing a cell, you need to reset the possible values for all cells
-            if (value == 0)
-            {
-                foreach (var r in Enumerable.Range(1, 9))
-                {
-                    foreach (var c in Enumerable.Range(1, 9))
-                    {
-                        if (Actual[c, r] == 0)
-                        {
-                            Possible[c, r] = string.Empty;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                Possible[col, row] = value.ToString();
-            }
-
-            // set the appearance for the Label control
-            if (value == 0) // erasing the cell
-            {
-                cellLabel.Text = string.Empty;
-                cellLabel.IsEraseable = eraseable;
-                cellLabel.BackColor = DefaultBackcolor;
-            }
-            // means default puzzle values
-            else
-            {
-                if (eraseable == false)
-                {
-                    cellLabel.BackColor = _fixedBackcolor;
-                    cellLabel.ForeColor = _fixedForecolor;
-                }
-                // means user-set value
-                else
-                {
-                    cellLabel.BackColor = _userBackcolor;
-                    cellLabel.ForeColor = _userForecolor;
-                }
-
-                cellLabel.Text = value.ToString();
-                cellLabel.IsEraseable = eraseable;
-            }
         }
 
         public void SetLevel(string menuItemName)

@@ -51,6 +51,7 @@
             this.TxtActivities = new System.Windows.Forms.TextBox();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.BtnClearTextBox = new System.Windows.Forms.Button();
+            this.BtnCheckCandidates = new System.Windows.Forms.Button();
             this.toolStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -240,11 +241,22 @@
             this.BtnClearTextBox.UseVisualStyleBackColor = true;
             this.BtnClearTextBox.Click += new System.EventHandler(this.BtnClearTextBox_Click);
             // 
+            // BtnCheckCandidates
+            // 
+            this.BtnCheckCandidates.Location = new System.Drawing.Point(348, 367);
+            this.BtnCheckCandidates.Name = "BtnCheckCandidates";
+            this.BtnCheckCandidates.Size = new System.Drawing.Size(142, 23);
+            this.BtnCheckCandidates.TabIndex = 9;
+            this.BtnCheckCandidates.Text = "Check Candidates";
+            this.BtnCheckCandidates.UseVisualStyleBackColor = true;
+            this.BtnCheckCandidates.Click += new System.EventHandler(this.BtnCheckCandidates_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(721, 416);
+            this.Controls.Add(this.BtnCheckCandidates);
             this.Controls.Add(this.BtnClearTextBox);
             this.Controls.Add(this.TxtActivities);
             this.Controls.Add(this.BtnSolvePuzzle);
@@ -276,7 +288,7 @@
         public System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.StatusStrip statusStrip1;
         public System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
-        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel2;
+        public System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel2;
         private System.Windows.Forms.ToolStripButton toolStripButton2;
         private System.Windows.Forms.ToolStripButton toolStripButton10;
         private System.Windows.Forms.ToolStripButton toolStripButton9;
@@ -291,6 +303,7 @@
         public System.Windows.Forms.TextBox TxtActivities;
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.Button BtnClearTextBox;
+        private System.Windows.Forms.Button BtnCheckCandidates;
     }
 }
 
