@@ -51,7 +51,7 @@
             this.TxtActivities = new System.Windows.Forms.TextBox();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.BtnClearTextBox = new System.Windows.Forms.Button();
-            this.BtnCheckCandidates = new System.Windows.Forms.Button();
+            this.BtnCheckPossibles = new System.Windows.Forms.Button();
             this.toolStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -237,26 +237,26 @@
             this.BtnClearTextBox.Name = "BtnClearTextBox";
             this.BtnClearTextBox.Size = new System.Drawing.Size(142, 23);
             this.BtnClearTextBox.TabIndex = 8;
-            this.BtnClearTextBox.Text = "Clear Text";
+            this.BtnClearTextBox.Text = "&Clear Text";
             this.BtnClearTextBox.UseVisualStyleBackColor = true;
             this.BtnClearTextBox.Click += new System.EventHandler(this.BtnClearTextBox_Click);
             // 
-            // BtnCheckCandidates
+            // BtnCheckPossibles
             // 
-            this.BtnCheckCandidates.Location = new System.Drawing.Point(348, 367);
-            this.BtnCheckCandidates.Name = "BtnCheckCandidates";
-            this.BtnCheckCandidates.Size = new System.Drawing.Size(142, 23);
-            this.BtnCheckCandidates.TabIndex = 9;
-            this.BtnCheckCandidates.Text = "Check Candidates";
-            this.BtnCheckCandidates.UseVisualStyleBackColor = true;
-            this.BtnCheckCandidates.Click += new System.EventHandler(this.BtnCheckCandidates_Click);
+            this.BtnCheckPossibles.Location = new System.Drawing.Point(348, 367);
+            this.BtnCheckPossibles.Name = "BtnCheckPossibles";
+            this.BtnCheckPossibles.Size = new System.Drawing.Size(142, 23);
+            this.BtnCheckPossibles.TabIndex = 9;
+            this.BtnCheckPossibles.Text = "Check &Possibles";
+            this.BtnCheckPossibles.UseVisualStyleBackColor = true;
+            this.BtnCheckPossibles.Click += new System.EventHandler(this.BtnCheckCandidates_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(721, 416);
-            this.Controls.Add(this.BtnCheckCandidates);
+            this.Controls.Add(this.BtnCheckPossibles);
             this.Controls.Add(this.BtnClearTextBox);
             this.Controls.Add(this.TxtActivities);
             this.Controls.Add(this.BtnSolvePuzzle);
@@ -303,7 +303,7 @@
         public System.Windows.Forms.TextBox TxtActivities;
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.Button BtnClearTextBox;
-        private System.Windows.Forms.Button BtnCheckCandidates;
+        private System.Windows.Forms.Button BtnCheckPossibles;
     }
 }
 

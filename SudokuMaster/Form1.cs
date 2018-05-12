@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -110,6 +111,8 @@ namespace SudokuMaster
             var col = Sdk.SelectedColumn = int.Parse(cellLabel.Name.Substring(0, 1));
             var row = Sdk.SelectedRow = int.Parse(cellLabel.Name.Substring(1, 1));
 
+          
+
             // if cell is not erasable then exit
             if (cellLabel.IsEraseable == false)
             {
@@ -145,7 +148,22 @@ namespace SudokuMaster
 
                     // save the value in the array
                     SetCell(col, row, Sdk.SelectedNumber, true);
-                    SetText = $@"The number entered at ({col},{row}) was {Sdk.SelectedNumber}.";
+
+                    var watch = new Stopwatch();
+                    watch.Start();
+
+                    TxtActivities.Clear();
+                    Sdk.GetPossiblesAndValues();
+
+                    watch.Stop();
+
+                    // Get the elapsed time as a TimeSpan value.
+                    var ts = watch.Elapsed;
+
+                    // format and display the time span value
+                    string elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
+                    SetText = @"RunTime " + elapsedTime;
+
 
                     // saves the move into the stack
                     Sdk.Moves.Push($"{cellLabel.Name}{Sdk.SelectedNumber}");
@@ -439,7 +457,6 @@ namespace SudokuMaster
                 if (result == DialogResult.Yes)
                 {
                     Sdk.SaveGameToDisk(false);
-
                 }
                 else if (result == DialogResult.Cancel)
                 {
@@ -486,10 +503,6 @@ namespace SudokuMaster
                 if (result == DialogResult.Yes)
                 {
                     Sdk.SaveGameToDisk(false);
-                }
-                else
-                {
-                    return;
                 }
             }
 
@@ -616,6 +629,8 @@ namespace SudokuMaster
                 Sdk.Possible[col, row] = value.ToString();
             }
 
+          
+
             // set the appearance for the Label control
             if (value == 0) // erasing the cell
             {
@@ -666,7 +681,7 @@ namespace SudokuMaster
                 return;
             }
 
-            toolTip1.SetToolTip((CustomLabel)control, possiblevalues);
+            toolTip1.SetToolTip(cellLabel, possiblevalues);
         }
 
         private void Timer1_Tick(object sender, EventArgs e)
@@ -737,22 +752,22 @@ namespace SudokuMaster
 
         private void BtnCheckCandidates_Click(object sender, EventArgs e)
         {
-            var possibleValues = Sdk.CheckCandidates();
-            var s = string.Empty;
-            foreach (int col in Enumerable.Range(1, 9))
-            {
-                foreach (int row in Enumerable.Range(1, 9))
-                {
-                    s += possibleValues[col, row];
-                    if (col == 9)
-                    {
-                        s += Environment.NewLine;
-                        SetText = s;
-                    }
-                    s = string.Empty;
-                }
+            TxtActivities.Clear();
+            var watch = new Stopwatch();
+            watch.Start();
 
-            }
+            TxtActivities.Clear();
+            Sdk.GetPossiblesAndValues();
+
+            watch.Stop();
+
+            // Get the elapsed time as a TimeSpan value.
+            var ts = watch.Elapsed;
+
+            // Format and display the TimeSpan value.
+            string elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
+            SetText = @"RunTime " + elapsedTime;
+
         }
     }
 }

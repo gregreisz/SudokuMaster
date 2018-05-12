@@ -193,13 +193,15 @@ namespace SudokuMaster
                     {
                         continue;
                     }
-                    if (Possible[col, row].Length != 0)
+                    if (Possible[col, row] != string.Empty)
                     {
-                        cell += $"({col},{row}) {Possible[col, row]}   {CalculatePossibleValues(col, row, true)}";
+                        cell += $"({col},{row}) ({Possible[col, row]})";
                     }
-                    else if (Possible[col, row].Length == 0)
+                    else if (Possible[col, row] == string.Empty)
                     {
-                        cell += $"({col},{row}) {Actual[col, row]}   {CalculatePossibleValues(col, row, true)}";
+                        var possibleValues = CalculatePossibleValues(col, row, true);
+                        cell += $"({col},{row}) ({Actual[col, row]})  {possibleValues}";
+                        Form1._Form1.SetToolTip(col, row, possibleValues);
                     }
 
                     Form1._Form1.SetText = cell;
