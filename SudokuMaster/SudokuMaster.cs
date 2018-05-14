@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -13,9 +14,8 @@ namespace SudokuMaster
         public bool IsEraseable { get; set; }
     }
 
-    public class SudokuPuzzle
+    public class Sudoku
     {
-        // private readonly IForm1 form;
 
         #region Public Properties
 
@@ -58,6 +58,29 @@ namespace SudokuMaster
 
         #endregion
 
+        #region Sudoku Board Constants
+
+        // These colors are for cells with hint values are not eraseable.
+        public readonly Color _fixedBackcolor = Color.LightSteelBlue;
+        public readonly Color _fixedForecolor = Color.Blue;
+
+        // these colors are for user inserted values which are eraseable.
+        public readonly Color _userBackcolor = Color.LightYellow;
+        public readonly Color _userForecolor = Color.Black;
+
+        // This is the default back color for empty cells.
+        public Color _defaultBackcolor = Color.White;
+
+        // These are dimensions in pixels of each cell of the sudoku board.
+        public int CellHeight = 32;
+        public int CellWidth = 32;
+
+        // This is the offset in pixels from the top-left corner of the window.
+        public int XOffset = -20;
+        public int YOffset = 25;
+
+        #endregion
+
         // used to represent the values in the grid
         public int[,] Actual = new int[10, 10];
         public int[,] ActualBackup = new int[10, 10];
@@ -65,36 +88,25 @@ namespace SudokuMaster
         // used to store the state of the grid
         public Stack<int[,]> ActualStack = new Stack<int[,]>();
 
-
-
         // stacks to keep track of all the moves
         public Stack<string> Moves;
         public string[,] Possible = new string[10, 10];
         public Stack<string[,]> PossibleStack = new Stack<string[,]>();
         public Stack<string> RedoMoves;
 
-        public SudokuPuzzle()
-        {
-        }
-
-        //public SudokuPuzzle(IForm1 form)
-        //{
-        //    this.form = form;
-        //}
-
         public string CalculatePossibleValues(int col, int row, bool allowEmptyString = false)
         {
-            var s = !string.IsNullOrEmpty(Possible[col, row]) ? Possible[col, row] : "123456789";
+            var s = !String.IsNullOrEmpty(Possible[col, row]) ? Possible[col, row] : "123456789";
 
             int r;
             int c;
-
+            const string zero = " ";
             // Step (1) check by column
             for (r = 1; r <= 9; r++)
                 if (Actual[col, r] != 0)
                 {
                     // that means there is a actual value in it
-                    s = s.Replace(Actual[col, r].ToString(), string.Empty);
+                    s = s.Replace(Actual[col, r].ToString(), zero);
                 }
 
             // Step (2) check by row
@@ -102,7 +114,7 @@ namespace SudokuMaster
                 if (Actual[c, row] != 0)
                 {
                     // that means there is a actual value in it
-                    s = s.Replace(Actual[c, row].ToString(), string.Empty);
+                    s = s.Replace(Actual[c, row].ToString(), zero);
                 }
 
             // Step (3) check within the minigrid
@@ -112,11 +124,11 @@ namespace SudokuMaster
                 for (var cc = startC; cc <= startC + 2; cc++)
                     if (Actual[cc, rr] != 0)
                     {
-                        s = s.Replace(Actual[cc, rr].ToString(), string.Empty);
+                        s = s.Replace(Actual[cc, rr].ToString(), zero);
                     }
 
             // if possible value is string.Empty, then error
-            if (s == string.Empty && !allowEmptyString)
+            if (s == String.Empty && !allowEmptyString)
             {
                 throw new Exception("Invalid Move");
             }
@@ -130,9 +142,13 @@ namespace SudokuMaster
 
             // check row by row in grid
             foreach (var r in Enumerable.Range(1, 9))
+            {
                 // check column by column in grid
                 foreach (var c in Enumerable.Range(1, 9))
+                {
                     possibleValues[c, r] = CalculatePossibleValues(c, r, true);
+                }
+            }
 
             return possibleValues;
         }
@@ -141,14 +157,17 @@ namespace SudokuMaster
         {
             // print results
             var sb = new StringBuilder();
-            for (var row = 1; row <= 9; row++)
+            foreach (var row in Enumerable.Range(1, 9))
             {
-                for (var col = 1; col <= 9; col++)
+                foreach (var col in Enumerable.Range(1, 9))
+                {
                     sb.Append(Possible[col, row] != null ? $"{Possible[col, row]} " : $"{Actual[col, row]} ");
+                }
+
                 sb.AppendLine();
             }
 
-            Form1._Form1.SetText = sb.ToString();
+            Form1._Form1.SetText(sb.ToString());
         }
 
         public bool CheckColumnsAndRows()
@@ -179,7 +198,7 @@ namespace SudokuMaster
                     }
 
                     // number is confirmed
-                    Actual[col, row] = int.Parse(Possible[col, row]);
+                    Actual[col, row] = Int32.Parse(Possible[col, row]);
                     changes = true;
 
                     // accumulate the total score
@@ -187,6 +206,22 @@ namespace SudokuMaster
 
             CheckValues();
             return changes;
+        }
+
+        public void ClearBoard()
+        {
+            // initialize the stacks
+            Moves = new Stack<string>();
+            RedoMoves = new Stack<string>();
+
+            // initialize the cells in the board
+            foreach (var row in Enumerable.Range(1, 9))
+            {
+                foreach (var col in Enumerable.Range(1, 9))
+                {
+                    SetCell(col, row, 0, true);
+                }
+            }
         }
 
         private void CreateEmptyCells(int empty)
@@ -230,13 +265,13 @@ namespace SudokuMaster
                     // set the empty cell
                     emptyCells[i] = $"{c}{r}";
                     Actual[c, r] = 0;
-                    Possible[c, r] = string.Empty;
+                    Possible[c, r] = String.Empty;
 
 
                     // reflect the top half of the grid and make it symmetrical
                     emptyCells[empty - 1 - i] = (10 - c).ToString() + (10 - r);
                     Actual[10 - c, 10 - r] = 0;
-                    Possible[10 - c, 10 - r] = string.Empty;
+                    Possible[10 - c, 10 - r] = String.Empty;
                 } while (duplicate);
             }
         }
@@ -299,32 +334,62 @@ namespace SudokuMaster
             Seconds += 1;
         }
 
-        public void GetCandidates()
+        public void DrawBoard()
         {
-            var frm = Form1._Form1;
-            var cell = string.Empty;
+            SelectedNumber = 1;
+            var form = Form1._Form1;
+            // used to store the location of the cell
+            var location = new Point();
+
+            // draws the cells
             foreach (var row in Enumerable.Range(1, 9))
                 foreach (var col in Enumerable.Range(1, 9))
                 {
-                    if (Possible[col, row] == null)
+                    location.X = col * (CellWidth + 1) + XOffset;
+                    location.Y = row * (CellHeight + 1) + YOffset;
+                    var label = new CustomLabel
                     {
-                        continue;
-                    }
+                        Name = col.ToString() + row,
+                        BorderStyle = BorderStyle.Fixed3D,
+                        Location = location,
+                        Width = CellWidth,
+                        Height = CellHeight,
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        BackColor = _defaultBackcolor
+                    };
+                    label.Font = new Font(label.Font, label.Font.Style | FontStyle.Bold);
+                    label.IsEraseable = true;
+                    label.Click += form.Cell_Click;
+                    form.Controls.Add(label);
+                }
+        }
 
+        public void GetCandidates(bool showRowsAndColumns = true)
+        {
+            var frm = Form1._Form1;
+            var cell = string.Empty;
+            var newLine = Environment.NewLine;
+
+            foreach (var row in Enumerable.Range(1, 9))
+            {
+                foreach (var col in Enumerable.Range(1, 9))
+                {
                     if (Possible[col, row] != string.Empty)
                     {
-                        cell += $"({col},{row}) ({Possible[col, row]})";
+                        cell += $"{Possible[col, row]}";
                     }
                     else if (Possible[col, row] == string.Empty)
                     {
-                        var possibleValues = CalculatePossibleValues(col, row, true);
-                        cell += $"({col},{row}) ({Actual[col, row]})  {possibleValues}";
-                        frm.SetToolTip(col, row, possibleValues);
+                        cell += $"{Actual[col, row]}";
+                        var values = CalculatePossibleValues(col, row, true);
+                        values = values.Substring(0, 3) + newLine + values.Substring(3, 3) + newLine + values.Substring(6, 3);
+                        frm.SetLabel(col, row, values);
+                        frm.SetToolTip(col, row, values);
                     }
-
-                    frm.SetText = cell;
-                    cell = string.Empty;
                 }
+                frm.SetText(cell);
+                cell = string.Empty;
+            }
         }
 
         private void FindCellWithFewestPossibleValues(ref int col, ref int row)
@@ -346,7 +411,7 @@ namespace SudokuMaster
 
         private string GenerateNewPuzzle(int level, ref int score)
         {
-            var str = string.Empty;
+            var str = String.Empty;
             int empty;
 
             // initialize the entire board
@@ -354,7 +419,7 @@ namespace SudokuMaster
                 foreach (var col in Enumerable.Range(1, 9))
                 {
                     Actual[col, row] = 0;
-                    Possible[col, row] = string.Empty;
+                    Possible[col, row] = String.Empty;
                 }
 
             // clear the stacks
@@ -374,7 +439,7 @@ namespace SudokuMaster
             catch (Exception)
             {
                 // just in case an error occured, return an empty string
-                return string.Empty;
+                return String.Empty;
             }
 
             // make a backup copy of the _actual array
@@ -445,13 +510,13 @@ namespace SudokuMaster
                 }
                 catch (Exception)
                 {
-                    return string.Empty;
+                    return String.Empty;
                 }
 
                 // if too many tries, exit the loop
                 if (tries > 50)
                 {
-                    return string.Empty;
+                    return String.Empty;
                 }
             } while (true);
 
@@ -468,7 +533,7 @@ namespace SudokuMaster
             do
             {
                 result = GenerateNewPuzzle(level, ref score);
-                if (result == string.Empty)
+                if (result == String.Empty)
                 {
                     continue;
                 }
@@ -516,6 +581,22 @@ namespace SudokuMaster
 
             endOfDoLoop:
             return result;
+        }
+
+        public void InitializeToolStripButtons()
+        {
+            var form = Form1._Form1;
+            var toolStrip1 = form.toolStrip1;
+
+            // uncheck all the button controls in the ToolStrip
+            foreach (var i in Enumerable.Range(1, 10))
+            {
+                ((ToolStripButton)toolStrip1.Items[i]).Checked = false;
+                ((ToolStripButton)toolStrip1.Items[i]).AutoToolTip = false;
+                ((ToolStripButton)toolStrip1.Items[i]).ToolTipText = string.Empty;
+            }
+
+            form.toolStripButton1.Checked = true;
         }
 
         public bool IsMoveValid(int col, int row, int value)
@@ -581,7 +662,7 @@ namespace SudokuMaster
             {
                 pattern = "123456789";
                 for (c = 1; c <= 9; c++)
-                    pattern = pattern.Replace(Convert.ToString(Actual[c, r].ToString()), string.Empty);
+                    pattern = pattern.Replace(Convert.ToString(Actual[c, r].ToString()), String.Empty);
                 if (pattern.Length > 0)
                 {
                     return false;
@@ -593,7 +674,7 @@ namespace SudokuMaster
             {
                 pattern = "123456789";
                 for (r = 1; r <= 9; r++)
-                    pattern = pattern.Replace(Convert.ToString(Actual[c, r].ToString()), string.Empty);
+                    pattern = pattern.Replace(Convert.ToString(Actual[c, r].ToString()), String.Empty);
                 if (pattern.Length > 0)
                 {
                     return false;
@@ -607,7 +688,7 @@ namespace SudokuMaster
                 for (r = 1; r <= 9; r += 3)
                     for (var cc = 0; cc <= 2; cc++)
                         for (var rr = 0; rr <= 2; rr++)
-                            pattern = pattern.Replace(Convert.ToString(Actual[c + cc, r + rr].ToString()), string.Empty);
+                            pattern = pattern.Replace(Convert.ToString(Actual[c + cc, r + rr].ToString()), String.Empty);
                 if (pattern.Length > 0)
                 {
                     return false;
@@ -794,10 +875,10 @@ namespace SudokuMaster
                                     var originalPossible = Possible[ccc, rrr];
 
                                     // remove first twin number from possible values
-                                    Possible[ccc, rrr] = Possible[ccc, rrr].Replace(Possible[c, r][0].ToString(), string.Empty);
+                                    Possible[ccc, rrr] = Possible[ccc, rrr].Replace(Possible[c, r][0].ToString(), String.Empty);
 
                                     // remove second twin number from possible values
-                                    Possible[ccc, rrr] = Possible[ccc, rrr].Replace(Possible[c, r][1].ToString(), string.Empty);
+                                    Possible[ccc, rrr] = Possible[ccc, rrr].Replace(Possible[c, r][1].ToString(), String.Empty);
 
                                     // if the possible values are modified, then set the changes variable to true to
                                     // indicate that the possible values of cells in the minigrid have been modified
@@ -808,7 +889,7 @@ namespace SudokuMaster
 
                                     // if possible value reduces to empty string, then the user has placed a move that
                                     // results in the puzzle not being solvable
-                                    if (Possible[ccc, rrr] == string.Empty)
+                                    if (Possible[ccc, rrr] == String.Empty)
                                     {
                                         throw new Exception("Invalid Move");
                                     }
@@ -819,7 +900,7 @@ namespace SudokuMaster
                                         continue;
                                     }
 
-                                    Actual[ccc, rrr] = int.Parse(Possible[ccc, rrr]);
+                                    Actual[ccc, rrr] = Int32.Parse(Possible[ccc, rrr]);
                                 }
                         }
                 }
@@ -862,11 +943,11 @@ namespace SudokuMaster
                             // remove first twin number from possible
                             // values
                             Possible[ccc, r] = Convert.ToString(Possible[ccc, r]
-                                .Replace(Convert.ToString(Possible[c, r][0]), string.Empty));
+                                .Replace(Convert.ToString(Possible[c, r][0]), String.Empty));
 
                             // remove second twin number from possible values
                             Possible[ccc, r] = Convert.ToString(Possible[ccc, r]
-                                .Replace(Convert.ToString(Possible[c, r][1]), string.Empty));
+                                .Replace(Convert.ToString(Possible[c, r][1]), String.Empty));
 
                             // if the possible values are modified, then set the changes variable to true to indicate
                             // that the possible values of cells in the minigrid have been modified
@@ -877,7 +958,7 @@ namespace SudokuMaster
 
                             // if possible value reduces to empty string, then the user has placed a move that results
                             // in the puzzle not solvable
-                            if (Possible[ccc, r] == string.Empty)
+                            if (Possible[ccc, r] == String.Empty)
                             {
                                 throw new Exception("Invalid Move");
                             }
@@ -888,7 +969,7 @@ namespace SudokuMaster
                                 continue;
                             }
 
-                            Actual[ccc, r] = int.Parse(Possible[ccc, r]);
+                            Actual[ccc, r] = Int32.Parse(Possible[ccc, r]);
                         }
                     }
                 }
@@ -930,11 +1011,11 @@ namespace SudokuMaster
 
                             // remove first twin number from possible values
                             Possible[c, rrr] = Convert.ToString(Possible[c, rrr]
-                                .Replace(Convert.ToString(Possible[c, r][0]), string.Empty));
+                                .Replace(Convert.ToString(Possible[c, r][0]), String.Empty));
 
                             // remove second twin number from possible values
                             Possible[c, rrr] = Convert.ToString(Possible[c, rrr]
-                                .Replace(Convert.ToString(Possible[c, r][1]), string.Empty));
+                                .Replace(Convert.ToString(Possible[c, r][1]), String.Empty));
 
                             // if the possible values are modified, then set the changes variable to true to indicate
                             // that the possible values of cells in the minigrid have been modified
@@ -945,7 +1026,7 @@ namespace SudokuMaster
 
                             // if possible value reduces to empty string, then the user has placed a move that results
                             // in the puzzle not being solvable
-                            if (Possible[c, rrr] == string.Empty)
+                            if (Possible[c, rrr] == String.Empty)
                             {
                                 throw new Exception("Invalid Move");
                             }
@@ -956,7 +1037,7 @@ namespace SudokuMaster
                                 continue;
                             }
 
-                            Actual[c, rrr] = int.Parse(Possible[c, rrr]);
+                            Actual[c, rrr] = Int32.Parse(Possible[c, rrr]);
                         }
                     }
                 }
@@ -1018,16 +1099,16 @@ namespace SudokuMaster
 
                                 // remove first triplet number from possible values
                                 Possible[ccc, rrr] = Convert.ToString(Possible[ccc, rrr]
-                                    .Replace(Convert.ToString(Possible[c, r][0]), string.Empty));
+                                    .Replace(Convert.ToString(Possible[c, r][0]), String.Empty));
 
                                 // remove second triplet number from possible values
                                 Possible[ccc, rrr] = Convert.ToString(Possible[ccc, rrr]
-                                    .Replace(Convert.ToString(Possible[c, r][1]), string.Empty));
+                                    .Replace(Convert.ToString(Possible[c, r][1]), String.Empty));
 
                                 // remove third triplet number from possible
                                 // values---
                                 Possible[ccc, rrr] = Convert.ToString(Possible[ccc, rrr]
-                                    .Replace(Convert.ToString(Possible[c, r][2]), string.Empty));
+                                    .Replace(Convert.ToString(Possible[c, r][2]), String.Empty));
 
                                 // if the possible values are modified, then set the changes variable to true to indicate
                                 // that the possible values of cells in the  minigrid have been modified
@@ -1038,7 +1119,7 @@ namespace SudokuMaster
 
                                 // if possible value reduces to empty string, then the user has placed a move that results
                                 // in the puzzle not solvable
-                                if (Possible[ccc, rrr] == string.Empty)
+                                if (Possible[ccc, rrr] == String.Empty)
                                 {
                                     throw new Exception("Invalid Move");
                                 }
@@ -1049,7 +1130,7 @@ namespace SudokuMaster
                                     continue;
                                 }
 
-                                Actual[ccc, rrr] = int.Parse(Possible[ccc, rrr]);
+                                Actual[ccc, rrr] = Int32.Parse(Possible[ccc, rrr]);
                             }
                     }
 
@@ -1109,13 +1190,13 @@ namespace SudokuMaster
                         var originalPossible = Possible[c, rrr];
 
                         // remove first triplet number from possible values
-                        Possible[c, rrr] = Possible[c, rrr].Replace(Possible[c, r][0].ToString(), string.Empty);
+                        Possible[c, rrr] = Possible[c, rrr].Replace(Possible[c, r][0].ToString(), String.Empty);
 
                         // remove second triplet number from possible values
-                        Possible[c, rrr] = Possible[c, rrr].Replace(Possible[c, r][1].ToString(), string.Empty);
+                        Possible[c, rrr] = Possible[c, rrr].Replace(Possible[c, r][1].ToString(), String.Empty);
 
                         // remove third triplet number from possible values
-                        Possible[c, rrr] = Possible[c, rrr].Replace(Possible[c, r][2].ToString(), string.Empty);
+                        Possible[c, rrr] = Possible[c, rrr].Replace(Possible[c, r][2].ToString(), String.Empty);
 
                         // if the possible values are modified, then set the changes variable to true to indicate that
                         // the possible values of cells in the minigrid have been modified
@@ -1125,7 +1206,7 @@ namespace SudokuMaster
                         }
 
                         // if possible value reduces to empty string, then the user has placed a move that results in the puzzle not being solvable
-                        if (Possible[c, rrr] == string.Empty)
+                        if (Possible[c, rrr] == String.Empty)
                         {
                             throw new Exception("Invalid Move");
                         }
@@ -1136,7 +1217,7 @@ namespace SudokuMaster
                             continue;
                         }
 
-                        Actual[c, rrr] = int.Parse(Possible[c, rrr]);
+                        Actual[c, rrr] = Int32.Parse(Possible[c, rrr]);
                     }
                 }
 
@@ -1186,13 +1267,13 @@ namespace SudokuMaster
                             var originalPossible = Possible[ccc, r];
 
                             // remove first triplet number from possible values
-                            Possible[ccc, r] = Possible[ccc, r].Replace(Possible[c, r][0].ToString(), string.Empty);
+                            Possible[ccc, r] = Possible[ccc, r].Replace(Possible[c, r][0].ToString(), String.Empty);
 
                             // remove second triplet number from possible values
-                            Possible[ccc, r] = Possible[ccc, r].Replace(Possible[c, r][1].ToString(), string.Empty);
+                            Possible[ccc, r] = Possible[ccc, r].Replace(Possible[c, r][1].ToString(), String.Empty);
 
                             // remove third triplet number from possible values
-                            Possible[ccc, r] = Possible[ccc, r].Replace(Possible[c, r][2].ToString(), string.Empty);
+                            Possible[ccc, r] = Possible[ccc, r].Replace(Possible[c, r][2].ToString(), String.Empty);
 
                             // if the possible values are modified, then set the changes variable to true to indicate that
                             // the possible values of cells in the minigrid have been modified
@@ -1202,7 +1283,7 @@ namespace SudokuMaster
                             }
 
                             // if possible value reduces to empty string, then the user has placed a move that results in the puzzle not solvable
-                            if (Possible[ccc, r] == string.Empty)
+                            if (Possible[ccc, r] == String.Empty)
                             {
                                 throw new Exception("Invalid Move");
                             }
@@ -1213,11 +1294,36 @@ namespace SudokuMaster
                                 continue;
                             }
 
-                            Actual[ccc, r] = int.Parse(Possible[ccc, r]);
+                            Actual[ccc, r] = Int32.Parse(Possible[ccc, r]);
                         }
                 }
 
             return changes;
+        }
+
+        public void PaintBoard(PaintEventArgs e)
+        {
+            int y1, y2;
+
+            // draw the horizontal lines
+            var x1 = 1 * (CellWidth + 1) + XOffset - 1;
+            var x2 = 9 * (CellWidth + 1) + XOffset + CellWidth;
+            for (var r = 1; r <= 10; r += 3)
+            {
+                y1 = r * (CellHeight + 1) + YOffset - 1;
+                y2 = y1;
+                e.Graphics.DrawLine(Pens.Black, x1, y1, x2, y2);
+            }
+
+            // draw the vertical lines
+            y1 = 1 * (CellHeight + 1) + YOffset - 1;
+            y2 = 9 * (CellHeight + 1) + YOffset + CellHeight;
+            for (var c = 1; c <= 10; c += 3)
+            {
+                x1 = c * (CellWidth + 1) + XOffset - 1;
+                x2 = x1;
+                e.Graphics.DrawLine(Pens.Black, x1, y1, x2, y2);
+            }
         }
 
         private static void RandomizeThePossibleValues(ref string str)
@@ -1240,7 +1346,7 @@ namespace SudokuMaster
         public string SaveGameToDisk(bool saveAs)
         {
             // if saveFileName is empty, means game has not been saved before
-            if (SaveFileName == string.Empty || saveAs)
+            if (SaveFileName == String.Empty || saveAs)
             {
                 using (var saveFileDialog1 = new SaveFileDialog
                 {
@@ -1285,6 +1391,78 @@ namespace SudokuMaster
             }
 
             return $@"Puzzle saved in {SaveFileName}";
+        }
+
+        public void SetCell(int col, int row, int value, bool eraseable)
+        {
+            var form = Form1._Form1;
+            // Locate the particular Label control
+            var control = form.Controls.Find($"{col}{row}", true).FirstOrDefault();
+            var label = (CustomLabel)control;
+            if (label == null)
+            {
+                return;
+            }
+
+            // save the value in the array
+            Actual[col, row] = value;
+
+            // if erasing a cell, you need to reset the possible values for all cells
+            if (value == 0)
+            {
+                foreach (var r in Enumerable.Range(1, 9))
+                    foreach (var c in Enumerable.Range(1, 9))
+                        if (Actual[c, r] == 0)
+                        {
+                            Possible[c, r] = string.Empty;
+                        }
+            }
+            else
+            {
+                Possible[col, row] = value.ToString();
+            }
+
+
+            // set the appearance for the Label control
+            if (value == 0) // erasing the cell
+            {
+                label.Text = string.Empty;
+                label.IsEraseable = eraseable;
+                label.BackColor = _defaultBackcolor;
+            }
+            // eraseable means the contains the default/hint values
+            else
+            {
+                if (eraseable == false)
+                {
+                    label.BackColor = _fixedBackcolor;
+                    label.ForeColor = _fixedForecolor;
+                }
+                // means user-set value
+                else
+                {
+                    label.BackColor = _userBackcolor;
+                    label.ForeColor = _userForecolor;
+                }
+
+                label.Text = value.ToString();
+                label.IsEraseable = eraseable;
+            }
+        }
+
+        public void SetCheckedOnLevelMenuItems(ToolStripMenuItem menuItem)
+        {
+            var form = Form1._Form1;
+            foreach (ToolStripMenuItem item in form.menuStrip1.Items)
+            {
+                if (item.Name.Length == 0)
+                {
+                    continue;
+                }
+
+                foreach (ToolStripMenuItem subItem in item.DropDownItems)
+                    subItem.Checked = subItem.Name == menuItem.Name;
+            }
         }
 
         public void SetLevel(string menuItemName)
@@ -1515,7 +1693,7 @@ namespace SudokuMaster
             // select one value and try
             for (var i = 0; i <= possibleValues.Length - 1; i++)
             {
-                Actual[c, r] = int.Parse(possibleValues);
+                Actual[c, r] = Int32.Parse(possibleValues);
                 try
                 {
                     if (SolvePuzzle())
@@ -1526,11 +1704,13 @@ namespace SudokuMaster
                     }
 
                     // no problem with current selection, proceed with next cell
-                    if (BruteForceStop)
+                    if (!BruteForceStop)
                     {
-                        SolvePuzzleByBruteForce();
-                        return;
+                        continue;
                     }
+
+                    SolvePuzzleByBruteForce();
+                    return;
                 }
                 catch (Exception)
                 {
@@ -1543,15 +1723,90 @@ namespace SudokuMaster
 
         public void StartNewGame()
         {
-            var frm = Form1._Form1;
-
+            var form = Form1._Form1;
             SaveFileName = string.Empty;
-            frm.TxtActivities.Clear();
+            form.TxtActivities.Clear();
             Seconds = 0;
-            frm.ClearBoard();
+            InitializeToolStripButtons();
+            ClearBoard();
             GameStarted = true;
-            frm.timer1.Enabled = true;
-            frm.SetStatus = @"New game started.";
+            form.timer1.Enabled = true;
+            form.SetStatus = @"New game started.";
+        }
+
+        public void SudokuBoardHandler(object sender)
+        {
+            var form = Form1._Form1;
+            // check to see if game has even started or not
+            if (!GameStarted)
+            {
+                Console.Beep();
+                form.SetText(@"Click File->New to start a new game or File->Open to load an existing game");
+                return;
+            }
+
+            var cellLabel = (CustomLabel)sender;
+
+            // determine the col and row of the selected cell
+            var col = SelectedColumn = int.Parse(cellLabel.Name.Substring(0, 1));
+            var row = SelectedRow = int.Parse(cellLabel.Name.Substring(1, 1));
+
+
+            // if cell is not erasable then exit
+            if (cellLabel.IsEraseable == false)
+            {
+                Console.Beep();
+                form.SetText(@"This cell cannot be erased.");
+                return;
+            }
+
+            try
+            {
+                // If erasing a cell
+                if (SelectedNumber == 0)
+                {
+                    // if cell is empty then no need to erase
+                    if (Actual[SelectedColumn, SelectedRow] == 0)
+                    {
+                        return;
+                    }
+
+                    // save the value in the array
+                    SetCell(col, row, SelectedNumber, true);
+                    form.SetText($@"Number erased at ({col},{row})");
+                }
+                else if (cellLabel.Text == string.Empty)
+                {
+                    // else setting a value; check if move is valid
+                    if (!IsMoveValid(col, row, SelectedNumber))
+                    {
+                        Console.Beep();
+                        form.SetText($@"Invalid move at ({col},{row})");
+                        return;
+                    }
+
+                    // save the value in the array
+                    SetCell(col, row, SelectedNumber, true);
+
+                    // saves the move into the stack
+                    Moves.Push($"{cellLabel.Name}{SelectedNumber}");
+
+                    GetCandidates();
+
+                    if (!IsPuzzleSolved())
+                    {
+                        return;
+                    }
+
+                    form.timer1.Enabled = false;
+                    Console.Beep();
+                    form.SetText(@"*****Puzzle Solved*****");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
 
         private void VacateAnotherPairOfCells(ref string str)
@@ -1597,21 +1852,20 @@ namespace SudokuMaster
             {
                 foreach (var col in Enumerable.Range(1, 9))
                 {
-                    if (int.Parse(str[counter].ToString()) != 0)
+                    if (Int32.Parse(str[counter].ToString()) != 0)
                     {
-                        Actual[col, row] = int.Parse(str[counter].ToString());
+                        Actual[col, row] = Int32.Parse(str[counter].ToString());
                         Possible[col, row] = str[counter].ToString();
                     }
                     else
                     {
                         Actual[col, row] = 0;
-                        Possible[col, row] = string.Empty;
+                        Possible[col, row] = String.Empty;
                     }
 
                     counter++;
                 }
             }
         }
-
     }
 }

@@ -31,6 +31,7 @@
             this.components = new System.ComponentModel.Container();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
+            this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton2 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton3 = new System.Windows.Forms.ToolStripButton();
@@ -51,7 +52,6 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.BtnClearTextBox = new System.Windows.Forms.Button();
             this.BtnCheckCandidates = new System.Windows.Forms.Button();
-            this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.toolStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -75,6 +75,12 @@
             this.toolStrip1.Size = new System.Drawing.Size(721, 25);
             this.toolStrip1.TabIndex = 0;
             this.toolStrip1.Text = "toolStrip1";
+            // 
+            // toolStripLabel1
+            // 
+            this.toolStripLabel1.Name = "toolStripLabel1";
+            this.toolStripLabel1.Size = new System.Drawing.Size(38, 22);
+            this.toolStripLabel1.Text = "Select";
             // 
             // toolStripButton1
             // 
@@ -265,12 +271,6 @@
             this.BtnCheckCandidates.UseVisualStyleBackColor = true;
             this.BtnCheckCandidates.Click += new System.EventHandler(this.BtnCheckCandidates_Click);
             // 
-            // toolStripLabel1
-            // 
-            this.toolStripLabel1.Name = "toolStripLabel1";
-            this.toolStripLabel1.Size = new System.Drawing.Size(38, 22);
-            this.toolStripLabel1.Text = "Select";
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -302,7 +302,7 @@
         #endregion
 
         public System.Windows.Forms.ToolTip toolTip1;
-        private System.Windows.Forms.ToolStrip toolStrip1;
+        public System.Windows.Forms.ToolStrip toolStrip1;
         public System.Windows.Forms.ToolStripButton toolStripButton1;
         public System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.StatusStrip statusStrip1;
@@ -320,7 +320,7 @@
         private System.Windows.Forms.Button BtnHint;
         private System.Windows.Forms.Button BtnSolvePuzzle;
         public System.Windows.Forms.TextBox TxtActivities;
-        private System.Windows.Forms.MenuStrip menuStrip1;
+        public System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.Button BtnClearTextBox;
         private System.Windows.Forms.Button BtnCheckCandidates;
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;

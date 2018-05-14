@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
@@ -12,9 +10,11 @@ namespace SudokuMaster
 {
     public interface IForm1
     {
-        string SetText { set; }
+        void SetText(string input, bool writeLine);
 
         string SetStatus { set; }
+
+        void SetLabel(int col, int row, string input);
 
     }
 
@@ -22,36 +22,12 @@ namespace SudokuMaster
     {
         public static Form1 _Form1;
 
-        private readonly SudokuPuzzle Sdk = new SudokuPuzzle();
-
-        #region Sudoku Board Fields
-
-        // These colors are for cells with hint values are not eraseable.
-        public readonly Color _fixedBackcolor = Color.LightSteelBlue;
-        public readonly Color _fixedForecolor = Color.Blue;
-
-        // these colors are for user inserted values which are eraseable.
-        public readonly Color _userBackcolor = Color.LightYellow;
-        public readonly Color _userForecolor = Color.Black;
-
-        // This is the default back color for empty cells.
-        public Color _defaultBackcolor = Color.White;
-
-        // These are dimensions in pixels of each cell of the sudoku board.
-        public int CellHeight = 32;
-        public int CellWidth = 32;
-
-        // This is the offset in pixels from the top-left corner of the window.
-        public int XOffset = -20;
-        public int YOffset = 25;
-
-        #endregion
+        private readonly Sudoku Sdk = new Sudoku();
 
         public Form1()
         {
             InitializeComponent();
-            // This is to allow referencing controls on this form from classes without 
-            // causing circular references.
+            // This is to allow referencing controls on this form from classes
             _Form1 = this;
         }
 
@@ -63,9 +39,25 @@ namespace SudokuMaster
             set => toolStripStatusLabel1.Text = value;
         }
 
-        public string SetText
+        public void SetText(string input, bool writeLine = true)
         {
-            set => TxtActivities.AppendText(value + Environment.NewLine);
+            if (!writeLine)
+            {
+                TxtActivities.AppendText(input);
+            }
+            TxtActivities.AppendText(input + Environment.NewLine);
+        }
+
+        public void SetLabel(int col, int row, string input)
+        {
+            // Locate the particular Label control
+            var control = Controls.Find($"{col}{row}", true).FirstOrDefault();
+            if (!(control is CustomLabel cellLabel))
+            {
+                return;
+            }
+            cellLabel.Font = new Font("Consolas", 9, cellLabel.Font.Style | FontStyle.Regular);
+            cellLabel.Tag = cellLabel.Text = input;
         }
 
         private void AboutToolStripMenuItem_Click(object sender, EventArgs e)
@@ -122,102 +114,15 @@ namespace SudokuMaster
 
         private void CandidatesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            var candidates = Sdk.CheckCandidates();
-            foreach (var item in candidates)
+            foreach (var candidate in Sdk.CheckCandidates())
             {
-                SetText = item;
+                SetText(candidate);
             }
         }
 
         public void Cell_Click(object sender, EventArgs e)
         {
-            // check to see if game has even started or not
-            if (!Sdk.GameStarted)
-            {
-                Console.Beep();
-                SetText = @"Click File->New to start a new game or File->Open to load an existing game";
-                return;
-            }
-
-            var cellLabel = (CustomLabel)sender;
-
-            // determine the col and row of the selected cell
-            var col = Sdk.SelectedColumn = int.Parse(cellLabel.Name.Substring(0, 1));
-            var row = Sdk.SelectedRow = int.Parse(cellLabel.Name.Substring(1, 1));
-
-
-            // if cell is not erasable then exit
-            if (cellLabel.IsEraseable == false)
-            {
-                Console.Beep();
-                SetText = @"This cell cannot be erased.";
-                return;
-            }
-
-            try
-            {
-                // If erasing a cell
-                if (Sdk.SelectedNumber == 0)
-                {
-                    // if cell is empty then no need to erase
-                    if (Sdk.Actual[Sdk.SelectedColumn, Sdk.SelectedRow] == 0)
-                    {
-                        return;
-                    }
-
-                    // save the value in the array
-                    SetCell(col, row, Sdk.SelectedNumber, true);
-                    SetText = $@"Number erased at ({col},{row})";
-                }
-                else if (cellLabel.Text == string.Empty)
-                {
-                    // else setting a value; check if move is valid
-                    if (!Sdk.IsMoveValid(col, row, Sdk.SelectedNumber))
-                    {
-                        Console.Beep();
-                        SetText = $@"Invalid move at ({col},{row})";
-                        return;
-                    }
-
-                    // save the value in the array
-                    SetCell(col, row, Sdk.SelectedNumber, true);
-
-                    // saves the move into the stack
-                    Sdk.Moves.Push($"{cellLabel.Name}{Sdk.SelectedNumber}");
-
-                    TxtActivities.Clear();
-                    Sdk.GetCandidates();
-
-                    if (!Sdk.IsPuzzleSolved())
-                    {
-                        return;
-                    }
-
-                    timer1.Enabled = false;
-                    Console.Beep();
-                    SetText = @"*****Puzzle Solved*****";
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-        }
-
-        public void ClearBoard()
-        {
-            // initialize the stacks
-            Sdk.Moves = new Stack<string>();
-            Sdk.RedoMoves = new Stack<string>();
-
-            // initialize the cells in the board
-            foreach (var row in Enumerable.Range(1, 9))
-            {
-                foreach (var col in Enumerable.Range(1, 9))
-                {
-                    SetCell(col, row, 0, true);
-                }
-            }
+            Sdk.SudokuBoardHandler(sender);
         }
 
         protected void CheckColumnsAndRowsMenuItem_Click(object sender, EventArgs e)
@@ -312,36 +217,6 @@ namespace SudokuMaster
             menuStrip1.Items.Add(helpItem);
         }
 
-        public void DrawBoard()
-        {
-            Sdk.SelectedNumber = 1;
-
-            // used to store the location of the cell
-            var location = new Point();
-
-            // draws the cells
-            foreach (var row in Enumerable.Range(1, 9))
-                foreach (var col in Enumerable.Range(1, 9))
-                {
-                    location.X = col * (CellWidth + 1) + XOffset;
-                    location.Y = row * (CellHeight + 1) + YOffset;
-                    var label = new CustomLabel
-                    {
-                        Name = col.ToString() + row,
-                        BorderStyle = BorderStyle.Fixed3D,
-                        Location = location,
-                        Width = CellWidth,
-                        Height = CellHeight,
-                        TextAlign = ContentAlignment.MiddleCenter,
-                        BackColor = _defaultBackcolor
-                    };
-                    label.Font = new Font(label.Font, label.Font.Style | FontStyle.Bold);
-                    label.IsEraseable = true;
-                    label.Click += Cell_Click;
-                    Controls.Add(label);
-                }
-        }
-
         private void EasyToolStripMenuItem_Click(object sender, EventArgs e)
         {
             var menuItem = (ToolStripMenuItem)sender;
@@ -351,7 +226,7 @@ namespace SudokuMaster
             }
 
             Sdk.SetLevel(menuItem.Name);
-            SetCheckedOrNotChecked(menuItem);
+            Sdk.SetCheckedOnLevelMenuItems(menuItem);
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -361,7 +236,6 @@ namespace SudokuMaster
             toolStripStatusLabel2.Text = string.Empty;
 
             toolStripButton1.Click += ToolStripButton_Click;
-            toolStripButton1.Checked = true;
             toolStripButton2.Click += ToolStripButton_Click;
             toolStripButton3.Click += ToolStripButton_Click;
             toolStripButton4.Click += ToolStripButton_Click;
@@ -371,45 +245,23 @@ namespace SudokuMaster
             toolStripButton8.Click += ToolStripButton_Click;
             toolStripButton9.Click += ToolStripButton_Click;
             toolStripButton10.Click += ToolStripButton_Click;
+
+            toolTip1.InitialDelay = 100;
+            toolTip1.ReshowDelay = 100;
+            toolTip1.AutoPopDelay = 5000;
+
             TxtActivities.TextChanged += TxtActivities_TextChanged;
 
-            // uncheck all the button controls in the ToolStrip
-            foreach (var i in Enumerable.Range(1, 10))
-            {
-                ((ToolStripButton)toolStrip1.Items[i]).Checked = false;
-                ((ToolStripButton)toolStrip1.Items[i]).AutoToolTip = false;
-                ((ToolStripButton)toolStrip1.Items[i]).ToolTipText = string.Empty;
-            }
-
+            Sdk.InitializeToolStripButtons();
 
             CreateMenu();
 
-            DrawBoard();
+            Sdk.DrawBoard();
         }
 
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
-            int y1, y2;
-
-            // draw the horizontal lines
-            var x1 = 1 * (CellWidth + 1) + XOffset - 1;
-            var x2 = 9 * (CellWidth + 1) + XOffset + CellWidth;
-            for (var r = 1; r <= 10; r += 3)
-            {
-                y1 = r * (CellHeight + 1) + YOffset - 1;
-                y2 = y1;
-                e.Graphics.DrawLine(Pens.Black, x1, y1, x2, y2);
-            }
-
-            // draw the vertical lines
-            y1 = 1 * (CellHeight + 1) + YOffset - 1;
-            y2 = 9 * (CellHeight + 1) + YOffset + CellHeight;
-            for (var c = 1; c <= 10; c += 3)
-            {
-                x1 = c * (CellWidth + 1) + XOffset - 1;
-                x2 = x1;
-                e.Graphics.DrawLine(Pens.Black, x1, y1, x2, y2);
-            }
+            Sdk.PaintBoard(e);
         }
 
         private void ExitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -440,7 +292,7 @@ namespace SudokuMaster
             }
 
             Sdk.SetLevel(menuItem.Name);
-            SetCheckedOrNotChecked(menuItem);
+            Sdk.SetCheckedOnLevelMenuItems(menuItem);
         }
 
         private void HardToolStripMenuItem_Click(object sender, EventArgs e)
@@ -452,7 +304,7 @@ namespace SudokuMaster
             }
 
             Sdk.SetLevel(menuItem.Name);
-            SetCheckedOrNotChecked(menuItem);
+            Sdk.SetCheckedOnLevelMenuItems(menuItem);
         }
 
         public void InitializeBoard(string fileContents)
@@ -473,7 +325,7 @@ namespace SudokuMaster
                     {
                         if (int.Parse(contents[counter].ToString()) != 0)
                         {
-                            SetCell(col, row, int.Parse(contents[counter].ToString()), false);
+                            Sdk.SetCell(col, row, int.Parse(contents[counter].ToString()), false);
                         }
                     }
                     catch (Exception exception)
@@ -496,7 +348,7 @@ namespace SudokuMaster
             }
 
             Sdk.SetLevel(menuItem.Name);
-            SetCheckedOrNotChecked(menuItem);
+            Sdk.SetCheckedOnLevelMenuItems(menuItem);
         }
 
         private void NewToolStripMenuItem_Click(object sender, EventArgs e)
@@ -530,21 +382,6 @@ namespace SudokuMaster
             Sdk.StartNewGame();
 
             InitializeBoard(puzzle);
-
-            //// initialize the board
-            //var counter = 0;
-            //foreach (var row in Enumerable.Range(1, 9))
-            //{
-            //    foreach (var col in Enumerable.Range(1, 9))
-            //    {
-            //        if (puzzle[counter].ToString() != "0")
-            //        {
-            //            SetCell(col, row, int.Parse(puzzle[counter].ToString()), false);
-            //        }
-
-            //        counter += 1;
-            //    }
-            //}
         }
 
         private void OpenToolStripMenuItem_Click(object sender, EventArgs e)
@@ -596,21 +433,15 @@ namespace SudokuMaster
         private void RedoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // if no more next move, then exit
-            if (Sdk.RedoMoves.Count == 0)
-            {
-                return;
-            }
+            if (Sdk.RedoMoves.Count == 0) return;
 
             // remove from one stack and push into the moves stack
             var str = Sdk.RedoMoves.Pop();
             Sdk.Moves.Push(str);
 
             // save the value in the array
-            SetCell(int.Parse(str[0].ToString()), int.Parse(str[1].ToString()), int.Parse(str[2].ToString()), true);
-            TxtActivities.Text = TxtActivities.Text + Environment.NewLine +
-                                 $@"Value reinserted at ({int.Parse(str[0].ToString())},{
-                                         int.Parse(str[1].ToString())
-                                     })";
+            Sdk.SetCell(int.Parse(str[0].ToString()), int.Parse(str[1].ToString()), int.Parse(str[2].ToString()), true);
+            SetText($@"Value reinserted at ({int.Parse(str[0].ToString())},{int.Parse(str[1].ToString())})");
         }
 
         private void SaveAsToolStripMenuItem_Click(object sender, EventArgs e)
@@ -635,77 +466,7 @@ namespace SudokuMaster
 
             TxtActivities.Text = Sdk.SaveGameToDisk(false);
         }
-
-        public void SetCell(int col, int row, int value, bool eraseable)
-        {
-            // Locate the particular Label control
-            var control = Controls.Find($"{col}{row}", true).FirstOrDefault();
-            var cellLabel = (CustomLabel)control;
-            if (cellLabel == null)
-            {
-                return;
-            }
-
-            // save the value in the array
-            Sdk.Actual[col, row] = value;
-
-            // if erasing a cell, you need to reset the possible values for all cells
-            if (value == 0)
-            {
-                foreach (var r in Enumerable.Range(1, 9))
-                    foreach (var c in Enumerable.Range(1, 9))
-                        if (Sdk.Actual[c, r] == 0)
-                        {
-                            Sdk.Possible[c, r] = string.Empty;
-                        }
-            }
-            else
-            {
-                Sdk.Possible[col, row] = value.ToString();
-            }
-
-
-            // set the appearance for the Label control
-            if (value == 0) // erasing the cell
-            {
-                cellLabel.Text = string.Empty;
-                cellLabel.IsEraseable = eraseable;
-                cellLabel.BackColor = _defaultBackcolor;
-            }
-            // eraseable means the contains the default/hint values
-            else
-            {
-                if (eraseable == false)
-                {
-                    cellLabel.BackColor = _fixedBackcolor;
-                    cellLabel.ForeColor = _fixedForecolor;
-                }
-                // means user-set value
-                else
-                {
-                    cellLabel.BackColor = _userBackcolor;
-                    cellLabel.ForeColor = _userForecolor;
-                }
-
-                cellLabel.Text = value.ToString();
-                cellLabel.IsEraseable = eraseable;
-            }
-        }
-
-        private void SetCheckedOrNotChecked(ToolStripMenuItem menuItem)
-        {
-            foreach (ToolStripMenuItem item in menuStrip1.Items)
-            {
-                if (item.Name.Length == 0)
-                {
-                    continue;
-                }
-
-                foreach (ToolStripMenuItem subItem in item.DropDownItems)
-                    subItem.Checked = subItem.Name == menuItem.Name;
-            }
-        }
-
+  
         public void SetToolTip(int col, int row, string possiblevalues)
         {
             // Locate the particular Label control
@@ -726,14 +487,6 @@ namespace SudokuMaster
 
         private void ToolStripButton_Click(object sender, EventArgs e)
         {
-            //// uncheck all the button controls in the ToolStrip
-            //foreach (var i in Enumerable.Range(1, 10))
-            //{
-            //    ((ToolStripButton)toolStrip1.Items[i]).Checked = false;
-            //    ((ToolStripButton)toolStrip1.Items[i]).AutoToolTip = false;
-            //    ((ToolStripButton)toolStrip1.Items[i]).ToolTipText = string.Empty;
-            //}
-
             // set the selected button to "checked"
             var button = (ToolStripButton)sender;
             button.Checked = true;
@@ -745,26 +498,23 @@ namespace SudokuMaster
         private void UndoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // if no previous moves, then exit
-            if (Sdk.Moves.Count == 0)
-            {
-                return;
-            }
+            if (Sdk.Moves.Count == 0) return;
 
             // remove from one stack and push into the redo stack
             var s = Sdk.Moves.Pop();
-            Sdk.RedoMoves.Push(s);
+            Sdk.RedoMoves.Push(Sdk.Moves.Pop());
 
             // save the value in the array
-            SetCell(int.Parse(s[0].ToString()), int.Parse(s[1].ToString()), 0, true);
-            SetText = $@"Value removed at ({int.Parse(s[0].ToString())},{int.Parse(s[1].ToString())})";
+            Sdk.SetCell(int.Parse(s[0].ToString()), int.Parse(s[1].ToString()), 0, true);
+            SetText($@"Value removed at ({int.Parse(s[0].ToString())},{int.Parse(s[1].ToString())})");
         }
 
         private void TxtActivities_TextChanged(object sender, EventArgs e)
         {
-            var textBox = (TextBox) sender;
-            textBox.SelectionStart = 0;
-            textBox.SelectionLength = 1;
-            textBox.ScrollToCaret();
+            var box = (TextBox)sender;
+            box.SelectionStart = 0;
+            box.SelectionLength = 1;
+            box.ScrollToCaret();
         }
     }
 }
