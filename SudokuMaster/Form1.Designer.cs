@@ -85,8 +85,7 @@
             // toolStripButton1
             // 
             this.toolStripButton1.AutoToolTip = false;
-            this.toolStripButton1.Checked = true;
-            this.toolStripButton1.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.toolStripButton1.CheckOnClick = true;
             this.toolStripButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.toolStripButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButton1.Name = "toolStripButton1";
