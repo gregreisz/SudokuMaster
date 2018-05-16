@@ -47,7 +47,6 @@
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabel2 = new System.Windows.Forms.ToolStripStatusLabel();
             this.BtnHint = new System.Windows.Forms.Button();
-            this.BtnSolvePuzzle = new System.Windows.Forms.Button();
             this.TxtActivities = new System.Windows.Forms.TextBox();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.BtnClearTextBox = new System.Windows.Forms.Button();
@@ -91,7 +90,7 @@
             this.toolStripButton1.Name = "toolStripButton1";
             this.toolStripButton1.Size = new System.Drawing.Size(23, 22);
             this.toolStripButton1.Text = "1";
-            this.toolStripButton1.ToolTipText = " 1";
+            this.toolStripButton1.ToolTipText = " ";
             // 
             // toolStripButton2
             // 
@@ -101,7 +100,6 @@
             this.toolStripButton2.Name = "toolStripButton2";
             this.toolStripButton2.Size = new System.Drawing.Size(23, 22);
             this.toolStripButton2.Text = "2";
-            this.toolStripButton2.ToolTipText = "2";
             // 
             // toolStripButton3
             // 
@@ -111,7 +109,6 @@
             this.toolStripButton3.Name = "toolStripButton3";
             this.toolStripButton3.Size = new System.Drawing.Size(23, 22);
             this.toolStripButton3.Text = "3";
-            this.toolStripButton3.ToolTipText = "3";
             // 
             // toolStripButton4
             // 
@@ -121,7 +118,6 @@
             this.toolStripButton4.Name = "toolStripButton4";
             this.toolStripButton4.Size = new System.Drawing.Size(23, 22);
             this.toolStripButton4.Text = "4";
-            this.toolStripButton4.ToolTipText = "4";
             // 
             // toolStripButton5
             // 
@@ -194,6 +190,7 @@
             this.toolStripStatusLabel2});
             this.statusStrip1.Location = new System.Drawing.Point(0, 394);
             this.statusStrip1.Name = "statusStrip1";
+            this.statusStrip1.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.statusStrip1.Size = new System.Drawing.Size(721, 22);
             this.statusStrip1.TabIndex = 1;
             this.statusStrip1.Text = "statusStrip1";
@@ -201,14 +198,23 @@
             // toolStripStatusLabel1
             // 
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            this.toolStripStatusLabel1.Size = new System.Drawing.Size(118, 17);
+            this.toolStripStatusLabel1.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.toolStripStatusLabel1.Size = new System.Drawing.Size(337, 17);
+            this.toolStripStatusLabel1.Spring = true;
             this.toolStripStatusLabel1.Text = "toolStripStatusLabel1";
+            this.toolStripStatusLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // toolStripStatusLabel2
             // 
+            this.toolStripStatusLabel2.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.toolStripStatusLabel2.ForeColor = System.Drawing.Color.Red;
+            this.toolStripStatusLabel2.LinkVisited = true;
             this.toolStripStatusLabel2.Name = "toolStripStatusLabel2";
-            this.toolStripStatusLabel2.Size = new System.Drawing.Size(118, 17);
+            this.toolStripStatusLabel2.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.toolStripStatusLabel2.Size = new System.Drawing.Size(337, 17);
+            this.toolStripStatusLabel2.Spring = true;
             this.toolStripStatusLabel2.Text = "toolStripStatusLabel2";
+            this.toolStripStatusLabel2.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // BtnHint
             // 
@@ -219,16 +225,6 @@
             this.BtnHint.Text = "Hints";
             this.BtnHint.UseVisualStyleBackColor = false;
             this.BtnHint.Click += new System.EventHandler(this.BtnHint_Click);
-            // 
-            // BtnSolvePuzzle
-            // 
-            this.BtnSolvePuzzle.Location = new System.Drawing.Point(160, 367);
-            this.BtnSolvePuzzle.Name = "BtnSolvePuzzle";
-            this.BtnSolvePuzzle.Size = new System.Drawing.Size(142, 23);
-            this.BtnSolvePuzzle.TabIndex = 5;
-            this.BtnSolvePuzzle.Text = "Solve Puzzle";
-            this.BtnSolvePuzzle.UseVisualStyleBackColor = true;
-            this.BtnSolvePuzzle.Click += new System.EventHandler(this.BtnSolvePuzzle_Click);
             // 
             // TxtActivities
             // 
@@ -278,7 +274,6 @@
             this.Controls.Add(this.BtnCheckCandidates);
             this.Controls.Add(this.BtnClearTextBox);
             this.Controls.Add(this.TxtActivities);
-            this.Controls.Add(this.BtnSolvePuzzle);
             this.Controls.Add(this.BtnHint);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.toolStrip1);
@@ -317,7 +312,6 @@
         private System.Windows.Forms.ToolStripButton toolStripButton4;
         private System.Windows.Forms.ToolStripButton toolStripButton3;
         private System.Windows.Forms.Button BtnHint;
-        private System.Windows.Forms.Button BtnSolvePuzzle;
         public System.Windows.Forms.TextBox TxtActivities;
         public System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.Button BtnClearTextBox;

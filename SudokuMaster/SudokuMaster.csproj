@@ -46,6 +46,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Board.cs" />
+    <Compile Include="Cell.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -57,6 +59,7 @@
     <Compile Include="SudokuMaster.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="SudokuSolver.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
@@ -69,8 +72,8 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <None Include="PocketSudoku1.sdo" />
-    <None Include="PocketSudoku2.sdo" />
+    <None Include="Games\PocketSudoku.Easy.1.sdo" />
+    <None Include="Games\PocketSudoku.Medium.1.sdo" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
