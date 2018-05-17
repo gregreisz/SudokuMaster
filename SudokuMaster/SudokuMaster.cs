@@ -25,7 +25,7 @@ namespace SudokuMaster
             _Sudoku = this;
         }
 
-        public Board board = new Board();
+        //public Board board = new Board();
 
 
         #region Arrays for Sudoku Values
@@ -115,7 +115,7 @@ namespace SudokuMaster
 
         #endregion
 
-        public void AddCellLabels()
+        public void AddCellLabelsToBoard()
         {
             SelectedNumber = 1;
             var form = Form1._Form1;
@@ -167,7 +167,7 @@ namespace SudokuMaster
 
 
             // if cell is not eraseable then exit
-            if (label.IsEraseable == false)
+            if (!label.IsEraseable)
             {
                 Console.Beep();
                 form.SetText(@"This cell cannot be erased.");
@@ -187,7 +187,7 @@ namespace SudokuMaster
 
                     // save the value in the array
                     SetCell(col, row, value);
-                    board.SetCellValue(row, col, value);
+
                     form.SetText($@"{value} erased at ({col},{row})");
                 }
                 else if (label.AlternateText == string.Empty)
@@ -201,7 +201,6 @@ namespace SudokuMaster
                     }
 
                     SetCell(col, row, value);
-                    board.SetCellValue(row, col, value);
 
                     // save the value in the array
                     Actual[col, row] = value;
@@ -515,9 +514,6 @@ namespace SudokuMaster
                 {
                     var value = int.Parse(contents[counter].ToString());
                     SetCell(col, row, value);
-                    board.SetCellValue(row, col, value);
-
-
                     counter++;
                 }
             }
@@ -687,19 +683,13 @@ namespace SudokuMaster
                 label.Font = new Font(labelSmallFontName, labelSizeSmall, label.Font.Style | FontStyle.Bold);
                 label.AlternateText = string.Empty;
             }
-            else if (value > 0)
-            {
-                // this cell has to show a start clue
-                label.BackColor = _fixedBackcolor;
-                label.ForeColor = _fixedForecolor;
-                label.Text = value.ToString();
-                label.AlternateText = null;
-            }
-            else if (value != 0 && !isEraseable)
+            else if (value > 0 && !isEraseable)
             {
                 // this has to show a start clue
                 label.BackColor = _fixedBackcolor;
                 label.ForeColor = _fixedForecolor;
+                label.Font = new Font(labelLargeFontName, labelSizeLarge, label.Font.Style | FontStyle.Bold);
+
                 label.Text = value.ToString();
                 label.AlternateText = null;
             }
@@ -719,11 +709,9 @@ namespace SudokuMaster
             var form = Form1._Form1;
             var lf = Environment.NewLine;
             var line = new string('*', 47);
-            var sb = new StringBuilder();
-            var counter = 0;
-            sb.Length = 0;
-            sb.AppendLine(line);
+            var sb = new StringBuilder {Length = 0};
 
+            sb.AppendLine(line);
             foreach (var col in Enumerable.Range(1, 9))
             {
                 foreach (var row in Enumerable.Range(1, 9))
@@ -734,31 +722,23 @@ namespace SudokuMaster
 
                     if (Actual[col, row] == 0 && label.IsEraseable)
                     {
-                        counter++;
                         label.Font = new Font(labelSmallFontName, labelSizeSmall, label.Font.Style | FontStyle.Bold);
                         label.Text = string.Empty;
                         var p = CalculatePossibles(col, row, true);
                         label.Text = $@"{p.Substring(0, 3)}{lf}{p.Substring(3, 3)}{lf}{p.Substring(6, 3)}";
                         sb.AppendLine($"({col},{row}) ({Actual[col, row]}) ({p})");
                     }
-                    else if (Actual[col, row] > 0 && label.IsEraseable)
+                    else if (Actual[col, row] > 0 && !label.IsEraseable)
                     {
-                        counter++;
                         label.Font = new Font(labelLargeFontName, labelSizeLarge, label.Font.Style | FontStyle.Bold);
                         label.Text = Actual[col, row].ToString();
                         sb.AppendLine($"({col},{row}) ({Actual[col, row]})");
 
                     }
-                    else
-                    {
-                        counter++;
-                        sb.AppendLine(line);
-                    }
                     if (row % 9 == 0) sb.AppendLine(line);
                 }
             }
 
-            sb.AppendLine($"{counter} cells were updated.");
             form.SetText(sb.ToString());
         }
 

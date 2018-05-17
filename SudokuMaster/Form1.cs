@@ -164,11 +164,10 @@ namespace SudokuMaster
             var CandidatesToolStripMenuItem = new ToolStripMenuItem("Check &Candidates");
             CandidatesToolStripMenuItem.Click += form.CandidatesToolStripMenuItem_Click;
 
-            var PossiblesToolStripMenuItem = new ToolStripMenuItem("Check &Possibles");
-            PossiblesToolStripMenuItem.Click += form.PossiblesToolStripMenuItem_Click;
+            //var PossiblesToolStripMenuItem = new ToolStripMenuItem("Check &Possibles");
 
             toolsItem.DropDownItems.Add(CandidatesToolStripMenuItem);
-            toolsItem.DropDownItems.Add(PossiblesToolStripMenuItem);
+            //toolsItem.DropDownItems.Add(PossiblesToolStripMenuItem);
 
             // create the Help menu
             var helpItem = new ToolStripMenuItem("&Help");
@@ -196,10 +195,6 @@ namespace SudokuMaster
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            // initialize the status bar
-            toolStripStatusLabel1.Text = string.Empty;
-            toolStripStatusLabel2.Text = string.Empty;
-
             toolStripButton1.Click += ToolStripButton_Click;
             toolStripButton1.Checked = true;
             toolStripButton2.Click += ToolStripButton_Click;
@@ -212,15 +207,16 @@ namespace SudokuMaster
             toolStripButton9.Click += ToolStripButton_Click;
             toolStripButton10.Click += ToolStripButton_Click;
 
+            TxtActivities.TextChanged += TxtActivities_TextChanged;
+
             toolTip1.InitialDelay = 100;
             toolTip1.ReshowDelay = 100;
             toolTip1.AutoPopDelay = 5000;
 
-            TxtActivities.TextChanged += TxtActivities_TextChanged;
 
             CreateMainMenu();
 
-            _Sudoku.AddCellLabels();
+            _Sudoku.AddCellLabelsToBoard();
         }
 
         private void Form1_Paint(object sender, PaintEventArgs e)
@@ -309,11 +305,6 @@ namespace SudokuMaster
 
         }
 
-        public void PossiblesToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-
-        }
-
         public void RedoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // if no more next move, then exit
@@ -329,7 +320,6 @@ namespace SudokuMaster
             int value = int.Parse(str[2].ToString());
 
             _Sudoku.SetCell(col, row, value);
-            _Sudoku.board.SetCellValue(row, col, value);
             SetText($@"Value reinserted at ({col},{row})");
         }
 
@@ -377,19 +367,24 @@ namespace SudokuMaster
         private void ToolStripButton_Click(object sender, EventArgs e)
         {
             // uncheck all the button controls in the ToolStrip
-            foreach (var i in Enumerable.Range(1, 10))
+            foreach (var item in toolStrip1.Items)
             {
-                ((ToolStripButton)toolStrip1.Items[i]).Checked = false;
-                ((ToolStripButton)toolStrip1.Items[i]).AutoToolTip = false;
-                ((ToolStripButton)toolStrip1.Items[i]).ToolTipText = string.Empty;
+                if (!(item is ToolStripButton button))
+                {
+                    continue;
+                }
+
+                button.Checked = false;
+                button.AutoToolTip = false;
+                button.ToolTipText = string.Empty;
             }
 
             // set the selected button to "checked"
-            var button = (ToolStripButton)sender;
-            button.Checked = true;
+            var selectedButton = (ToolStripButton)sender;
+            selectedButton.Checked = true;
 
             // set the appropriate number selected
-            _Sudoku.SelectedNumber = button.Text == @"Erase" ? 0 : int.Parse(button.Text);
+            _Sudoku.SelectedNumber = selectedButton.Text == @"Erase" ? 0 : int.Parse(selectedButton.Text);
 
         }
 
@@ -397,7 +392,7 @@ namespace SudokuMaster
         {
             var box = (TextBox)sender;
             box.SelectionStart = 0;
-            box.SelectionLength = 1;
+            box.SelectionLength = 0;
             box.ScrollToCaret();
         }
 
@@ -415,9 +410,9 @@ namespace SudokuMaster
             int col = int.Parse(s[0].ToString());
             int row = int.Parse(s[1].ToString());
 
-            const int value = 0;
+            //const int value = 0;
             _Sudoku.SetCell(col, row, 0);
-            _Sudoku.board.SetCellValue(row, col, value);
+            //_Sudoku.board.SetCellValue(row, col, value);
             SetText($@"Value removed at ({col},{row}).");
         }
 
