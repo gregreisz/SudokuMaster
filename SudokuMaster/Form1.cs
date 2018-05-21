@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -7,7 +9,7 @@ namespace SudokuMaster
 {
     public interface IForm1
     {
-        void SetText(string input, bool writeLine);
+        void SetText(string input);
 
         string SetStatus { set; }
 
@@ -19,17 +21,18 @@ namespace SudokuMaster
 
     public partial class Form1 : Form, IForm1
     {
+        #region Private Constants
+        private const string saveGame = "Do you want to save current game?";
+        private const string saveCurrentGame = "Save current game?";
+        #endregion
+
         public static Form1 _Form1;
 
-        public Sudoku _Sudoku = new Sudoku();
+        private Sudoku sudoku = new Sudoku();
 
-        public Form1()
-        {
-            InitializeComponent();
+        public Sudoku Sudoku { get => sudoku; set => sudoku = value; }
 
-            _Form1 = this;
-        }
-
+        #region Public Methods for Referencing Form1 Controls
         public string SetStatus
         {
             set => toolStripStatusLabel1.Text = value;
@@ -40,44 +43,63 @@ namespace SudokuMaster
             set => toolStripStatusLabel2.Text = value;
         }
 
-        public void SetText(string input, bool writeLine = true)
-        {
-            if (!writeLine)
-            {
-                TxtActivities.AppendText(input);
-            }
-            TxtActivities.AppendText(input + Environment.NewLine);
-        }
-
         public void SetLabel(int col, int row, string input)
         {
             // find the CustomLabel control
             var control = Controls.Find($"{col}{row}", true).FirstOrDefault();
             if (!(control is CustomLabel label)) return;
-            label.Font = new Font(_Sudoku.labelLargeFontName, 10, label.Font.Style | FontStyle.Bold);
+            label.Font = new Font(Sudoku.labelLargeFontName, 10, label.Font.Style | FontStyle.Bold);
             label.Text = input;
         }
 
-        private void BtnClearTextBox_Click(object sender, EventArgs e)
+        public void SetText(string input)
         {
-            TxtActivities.Clear();
-            toolStripStatusLabel2.Text = string.Empty;
+            TxtActivities.AppendText(input + Environment.NewLine);
         }
 
-        private void BtnCheckCandidates_Click(object sender, EventArgs e)
+        #endregion
+
+        public Form1()
         {
-            TxtActivities.Clear();
-            TxtActivities.SelectionLength = 0;
-            _Sudoku.RefreshAllPossiblesValues();
+            InitializeComponent();
+            _Form1 = this;
         }
+
+        //private void BtnRefreshGameBoard_Click(object sender, EventArgs e)
+        //{
+        //    const char matchChar = '0';
+        //    var contents = string.Empty;
+        //    Sudoku.CountOfClues = contents.Length - contents.Count(x => x == matchChar);
+        //    Sudoku.CurrentGameState = contents = Sudoku.FilterFileInput(contents);
+
+        //    // initialize the board
+        //    var counter = 0;
+        //    foreach (var row in Enumerable.Range(1, 9))
+        //    {
+        //        foreach (var col in Enumerable.Range(1, 9))
+        //        {
+        //            Sudoku.SetCell(col, row, int.Parse(contents[counter].ToString()));
+        //            counter += 1;
+        //        }
+
+        //    }
+        //}
+
+        //private void BtnCheckCandidates_Click(object sender, EventArgs e)
+        //{
+        //    TxtActivities.Clear();
+        //    TxtActivities.SelectionLength = 0;
+        //    TxtActivities.ScrollToCaret();
+        //    Sudoku.CheckCandidates();
+        //}
 
         private void BtnHint_Click(object sender, EventArgs e)
         {
             // show hints one cell at a time
-            _Sudoku.HintsMode = true;
+            Sudoku.HintsMode = true;
             try
             {
-                _Sudoku.CheckColumnsAndRows();
+                Sudoku.CheckColumnsAndRows();
             }
             catch (Exception ex)
             {
@@ -88,39 +110,31 @@ namespace SudokuMaster
 
         public void CandidatesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            _Sudoku.CheckCandidates();
+            //_Sudoku.CheckCandidates();
         }
 
-        public void Cell_Click(object sender, EventArgs e)
+        public void Cell_Click(object sender)
         {
-            _Sudoku.SudokuBoardHandler(sender);
+            Sudoku.SudokuBoardHandler(sender);
         }
 
         public void CheckColumnsAndRowsMenuItem_Click(object sender, EventArgs e)
         {
-            _Sudoku.CheckColumnsAndRows();
+            Sudoku.CheckColumnsAndRows();
         }
 
         public void CreateMainMenu()
         {
-            var form = Form1._Form1;
-
             // create the File menu
             var fileItem = new ToolStripMenuItem("&File");
-
             var openSubItem = new ToolStripMenuItem("&Open");
-            openSubItem.Click += form.OpenToolStripMenuItem_Click;
-
+            openSubItem.Click += OpenToolStripMenuItem_Click;
             var saveSubItem = new ToolStripMenuItem("&Save");
-            saveSubItem.Click += form.SaveToolStripMenuItem_Click;
-
+            saveSubItem.Click += SaveToolStripMenuItem_Click;
             var saveAsSubItem = new ToolStripMenuItem("Save&As");
-            saveAsSubItem.Click += form.SaveAsToolStripMenuItem_Click;
-
+            saveAsSubItem.Click += SaveAsToolStripMenuItem_Click;
             var exitSubItem = new ToolStripMenuItem("E&xit");
-            exitSubItem.Click += form.ExitToolStripMenuItem_Click;
-
-            //fileItem.DropDownItems.Add(newSubItem);
+            exitSubItem.Click += ExitToolStripMenuItem_Click;
             fileItem.DropDownItems.Add(openSubItem);
             fileItem.DropDownItems.Add(new ToolStripSeparator());
             fileItem.DropDownItems.Add(saveSubItem);
@@ -131,28 +145,22 @@ namespace SudokuMaster
             // create the Edit menu
             var editItem = new ToolStripMenuItem("&Edit");
             var undoSubItem = new ToolStripMenuItem("&Undo");
-            undoSubItem.Click += form.UndoToolStripMenuItem_Click;
-
+            undoSubItem.Click += UndoToolStripMenuItem_Click;
             var redoSubItem = new ToolStripMenuItem("&Redo");
-            redoSubItem.Click += form.RedoToolStripMenuItem_Click;
-
+            redoSubItem.Click += RedoToolStripMenuItem_Click;
             editItem.DropDownItems.Add(undoSubItem);
             editItem.DropDownItems.Add(redoSubItem);
 
             // create the Level menu
             var levelItem = new ToolStripMenuItem("&Level") { Name = "LevelMenuItem" };
             var easyToolStripMenuItem = new ToolStripMenuItem("&Easy") { Name = "EasyToolStripMenuItem" };
-            easyToolStripMenuItem.Click += form.EasyToolStripMenuItem_Click;
-
+            easyToolStripMenuItem.Click += EasyToolStripMenuItem_Click;
             var mediumToolStripMenuItem = new ToolStripMenuItem("&Medium") { Name = "MediumToolStripMenuItem" };
-            mediumToolStripMenuItem.Click += form.MediumToolStripMenuItem_Click;
-
+            mediumToolStripMenuItem.Click += MediumToolStripMenuItem_Click;
             var hardToolStripMenuItem = new ToolStripMenuItem("&Hard") { Name = "HardToolStripMenuItem" };
-            hardToolStripMenuItem.Click += form.HardToolStripMenuItem_Click;
-
+            hardToolStripMenuItem.Click += HardToolStripMenuItem_Click;
             var expertToolStripMenuItem = new ToolStripMenuItem("E&xpert") { Name = "ExpertToolStripMenuItem" };
-            expertToolStripMenuItem.Click += form.ExpertToolStripMenuItem_Click;
-
+            expertToolStripMenuItem.Click += ExpertToolStripMenuItem_Click;
             levelItem.DropDownItems.Add(easyToolStripMenuItem);
             levelItem.DropDownItems.Add(mediumToolStripMenuItem);
             levelItem.DropDownItems.Add(hardToolStripMenuItem);
@@ -160,25 +168,20 @@ namespace SudokuMaster
 
             // create the Tools menu
             var toolsItem = new ToolStripMenuItem("&Tools");
-
             var CandidatesToolStripMenuItem = new ToolStripMenuItem("Check &Candidates");
-            CandidatesToolStripMenuItem.Click += form.CandidatesToolStripMenuItem_Click;
-
-            //var PossiblesToolStripMenuItem = new ToolStripMenuItem("Check &Possibles");
-
+            CandidatesToolStripMenuItem.Click += CandidatesToolStripMenuItem_Click;
             toolsItem.DropDownItems.Add(CandidatesToolStripMenuItem);
-            //toolsItem.DropDownItems.Add(PossiblesToolStripMenuItem);
 
             // create the Help menu
             var helpItem = new ToolStripMenuItem("&Help");
             var aboutSubItem = new ToolStripMenuItem("&About");
             helpItem.DropDownItems.Add(aboutSubItem);
 
-            form.menuStrip1.Items.Add(fileItem);
-            form.menuStrip1.Items.Add(editItem);
-            form.menuStrip1.Items.Add(levelItem);
-            form.menuStrip1.Items.Add(toolsItem);
-            form.menuStrip1.Items.Add(helpItem);
+            menuStrip1.Items.Add(fileItem);
+            menuStrip1.Items.Add(editItem);
+            menuStrip1.Items.Add(levelItem);
+            menuStrip1.Items.Add(toolsItem);
+            menuStrip1.Items.Add(helpItem);
         }
 
         public void EasyToolStripMenuItem_Click(object sender, EventArgs e)
@@ -189,8 +192,8 @@ namespace SudokuMaster
                 throw new ArgumentNullException(nameof(menuItem));
             }
 
-            _Sudoku.SetLevel(menuItem.Name);
-            _Sudoku.SetMenuItemChecked(menuItem);
+            Sudoku.SetLevel(menuItem.Name);
+            Sudoku.SetMenuItemChecked(menuItem);
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -207,39 +210,19 @@ namespace SudokuMaster
             toolStripButton9.Click += ToolStripButton_Click;
             toolStripButton10.Click += ToolStripButton_Click;
 
-            TxtActivities.TextChanged += TxtActivities_TextChanged;
-
-            toolTip1.InitialDelay = 100;
-            toolTip1.ReshowDelay = 100;
-            toolTip1.AutoPopDelay = 5000;
-
-
             CreateMainMenu();
 
-            _Sudoku.AddCellLabelsToBoard();
+            Sudoku.AddLabelsToBoard();
         }
 
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
-            _Sudoku.PaintBoard(e);
+            Sudoku.PaintBoard(e);
         }
 
         public void ExitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            const string message = "Do you want to save the current game?";
-            const string caption = "Save current game";
-            const MessageBoxButtons buttons = MessageBoxButtons.YesNoCancel;
-
-            var result = MessageBox.Show(message, caption, buttons);
-            if (result == DialogResult.Yes)
-            {
-                _Sudoku.SaveGameToDisk(false);
-            }
-            else if (result == DialogResult.Cancel)
-            {
-                return;
-            }
-
+            GetGameSaveInfo();
             Application.Exit();
         }
 
@@ -251,8 +234,8 @@ namespace SudokuMaster
                 throw new ArgumentNullException(nameof(menuItem));
             }
 
-            _Sudoku.SetLevel(menuItem.Name);
-            _Sudoku.SetMenuItemChecked(menuItem);
+            Sudoku.SetLevel(menuItem.Name);
+            Sudoku.SetMenuItemChecked(menuItem);
         }
 
         public void HardToolStripMenuItem_Click(object sender, EventArgs e)
@@ -263,8 +246,8 @@ namespace SudokuMaster
                 throw new ArgumentNullException(nameof(menuItem));
             }
 
-            _Sudoku.SetLevel(menuItem.Name);
-            _Sudoku.SetMenuItemChecked(menuItem);
+            Sudoku.SetLevel(menuItem.Name);
+            Sudoku.SetMenuItemChecked(menuItem);
         }
 
         public void MediumToolStripMenuItem_Click(object sender, EventArgs e)
@@ -275,93 +258,125 @@ namespace SudokuMaster
                 throw new ArgumentNullException(nameof(menuItem));
             }
 
-            _Sudoku.SetLevel(menuItem.Name);
-            _Sudoku.SetMenuItemChecked(menuItem);
+            Sudoku.SetLevel(menuItem.Name);
+            Sudoku.SetMenuItemChecked(menuItem);
         }
 
         public void OpenToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // check with the user to see if that want to save a game they may have opened
-            if (_Sudoku.GameStarted)
-            {
-                const string message = "Do you want to save current game?";
-                const string caption = "Save current game";
-                const MessageBoxButtons buttons = MessageBoxButtons.YesNoCancel;
+            // ask user if they want to save their current game to disk if any
+            if (GetGameSaveInfo()) return;
 
-                var result = MessageBox.Show(message, caption, buttons);
-                if (result == DialogResult.Yes)
+            Sudoku.StartNewGame();
+
+            Array.Clear(Sudoku.ActualValues, 0, Sudoku.ActualValues.Length);
+            Array.Clear(Sudoku.PossibleValues, 0, Sudoku.PossibleValues.Length);
+
+            // initialize the stacks
+            Sudoku.Moves = new Stack<string>();
+            Sudoku.RedoMoves = new Stack<string>();
+
+            // load the game from disk
+            var contents = Sudoku.CurrentGameState = Sudoku.LoadGameFromDisk();
+
+            // set up the board with the saved game
+            Sudoku.Counter = 0;
+            var counter = 0;
+            foreach (var row in Enumerable.Range(1, 9))
+            {
+                foreach (var col in Enumerable.Range(1, 9))
                 {
-                    _Sudoku.SaveGameToDisk(false);
+                    var value = int.Parse(contents[counter].ToString());
+                    counter++;
+                    Sudoku.SetCell(col, row, value);
                 }
+
             }
 
-            // read the game file from disk
-            var contents = _Sudoku.ReadInSavedGame();
+            for (var r = 1; r <= 9; r++)
+            {
+                for (var c = 1; c <= 9; c++)
+                {
+                    if (Sudoku.Actual[c, r] != 0)
+                    {
+                        continue;
+                    }
 
-            // initialize the game
-            _Sudoku.StartGame();
+                    var control = Controls.Find($"{c}{r}", true).FirstOrDefault();
+                    var label = (Label)control;
+                    if (label != null)
+                    {
+                        label.Text = Sudoku.CalculatePossibleValues(c, r);
+                    }
+                }
+            }
+        }
 
-            SetStatus2 = _Sudoku.LoadSavedGame(contents) ? @"Game loaded successfully" : "Game failed to load successfully";
+        private bool GetGameSaveInfo()
+        {
+            if (!Sudoku.GameStarted)
+            {
+                return false;
+            }
 
+            var response = MessageBox.Show(saveGame, saveCurrentGame, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+
+            if (response == DialogResult.Yes)
+            {
+                Sudoku.SaveGameToDisk(false);
+            }
+            else if (response == DialogResult.Cancel)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public void RedoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // if no more next move, then exit
-            if (_Sudoku.RedoMoves.Count == 0) return;
+            if (Sudoku.RedoMoves.Count == 0) return;
 
             // remove from one stack and push into the moves stack
-            var str = _Sudoku.RedoMoves.Pop();
-            _Sudoku.Moves.Push(str);
+            var str = Sudoku.RedoMoves.Pop();
+            Sudoku.Moves.Push(str);
 
             // save the value in the array
             int col = int.Parse(str[0].ToString());
             int row = int.Parse(str[1].ToString());
             int value = int.Parse(str[2].ToString());
 
-            _Sudoku.SetCell(col, row, value);
+            Sudoku.SetCell(col, row, value);
             SetText($@"Value reinserted at ({col},{row})");
         }
 
         public void SaveAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!_Sudoku.GameStarted)
+            if (!Sudoku.GameStarted)
             {
                 Console.Beep();
-                TxtActivities.Text = @"Game not started yet.";
+                SetStatus2 = @"Game not started yet.";
                 return;
             }
 
-            _Sudoku.SaveGameToDisk(true);
+            Sudoku.SaveGameToDisk(true);
         }
 
         public void SaveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!_Sudoku.GameStarted)
+            if (!Sudoku.GameStarted)
             {
-                TxtActivities.Text = @"Game not started yet.";
+                SetStatus2 = @"Game not started yet.";
                 return;
             }
 
-            TxtActivities.Text = _Sudoku.SaveGameToDisk(false);
-        }
-
-        public void SetToolTip(int col, int row, string possiblevalues)
-        {
-            // Locate the particular Label control
-            var control = Controls.Find(col.ToString() + row, true).FirstOrDefault();
-            var cellLabel = (CustomLabel)control;
-            if (cellLabel == null)
-            {
-                return;
-            }
-
-            toolTip1.SetToolTip(cellLabel, possiblevalues);
+            Sudoku.SaveGameToDisk(false);
         }
 
         private void Timer1_Tick(object sender, EventArgs e)
         {
-            _Sudoku.DisplayElapsedTime();
+            Sudoku.DisplayElapsedTime();
         }
 
         private void ToolStripButton_Click(object sender, EventArgs e)
@@ -384,37 +399,34 @@ namespace SudokuMaster
             selectedButton.Checked = true;
 
             // set the appropriate number selected
-            _Sudoku.SelectedNumber = selectedButton.Text == @"Erase" ? 0 : int.Parse(selectedButton.Text);
+            Sudoku.SelectedNumber = selectedButton.Text == @"Erase" ? 0 : int.Parse(selectedButton.Text);
 
-        }
-
-        private void TxtActivities_TextChanged(object sender, EventArgs e)
-        {
-            var box = (TextBox)sender;
-            box.SelectionStart = 0;
-            box.SelectionLength = 0;
-            box.ScrollToCaret();
         }
 
         public void UndoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // if no previous moves, then exit
-            if (_Sudoku.Moves.Count == 0) return;
+            if (Sudoku.Moves.Count == 0) return;
 
             // remove from one stack and push into the redo stack
-            var s = _Sudoku.Moves.Pop();
-            _Sudoku.RedoMoves.Push(_Sudoku.Moves.Pop());
+            var s = Sudoku.Moves.Pop();
+            Sudoku.RedoMoves.Push(Sudoku.Moves.Pop());
 
 
             // save the value in the array
             int col = int.Parse(s[0].ToString());
             int row = int.Parse(s[1].ToString());
 
-            //const int value = 0;
-            _Sudoku.SetCell(col, row, 0);
-            //_Sudoku.board.SetCellValue(row, col, value);
-            SetText($@"Value removed at ({col},{row}).");
+            Sudoku.SetCell(col, row, 0);
+            SetStatus2 = $@"Value removed at ({col},{row}).";
         }
 
+        private void BtnViewCandidates_Click(object sender, EventArgs e)
+        {
+            TxtActivities.Clear();
+            Sudoku.CheckCandidates();
+            TxtActivities.SelectionLength = 0;
+            TxtActivities.ScrollToCaret();
+        }
     }
 }
