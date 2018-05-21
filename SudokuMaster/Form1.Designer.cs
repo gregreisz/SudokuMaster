@@ -46,10 +46,11 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabel2 = new System.Windows.Forms.ToolStripStatusLabel();
-            this.BtnHint = new System.Windows.Forms.Button();
+            this.BtnCheckValues = new System.Windows.Forms.Button();
             this.TxtActivities = new System.Windows.Forms.TextBox();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.BtnViewCandidates = new System.Windows.Forms.Button();
+            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.toolStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -174,7 +175,6 @@
             // timer1
             // 
             this.timer1.Interval = 1000;
-            this.timer1.Tick += new System.EventHandler(this.Timer1_Tick);
             // 
             // statusStrip1
             // 
@@ -190,11 +190,11 @@
             // 
             // toolStripStatusLabel1
             // 
+            this.toolStripStatusLabel1.ForeColor = System.Drawing.SystemColors.ControlText;
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
             this.toolStripStatusLabel1.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.toolStripStatusLabel1.Size = new System.Drawing.Size(583, 17);
+            this.toolStripStatusLabel1.Size = new System.Drawing.Size(438, 17);
             this.toolStripStatusLabel1.Spring = true;
-            this.toolStripStatusLabel1.Text = "toolStripStatusLabel1";
             this.toolStripStatusLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // toolStripStatusLabel2
@@ -204,20 +204,19 @@
             this.toolStripStatusLabel2.LinkVisited = true;
             this.toolStripStatusLabel2.Name = "toolStripStatusLabel2";
             this.toolStripStatusLabel2.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.toolStripStatusLabel2.Size = new System.Drawing.Size(583, 17);
+            this.toolStripStatusLabel2.Size = new System.Drawing.Size(438, 17);
             this.toolStripStatusLabel2.Spring = true;
-            this.toolStripStatusLabel2.Text = "toolStripStatusLabel2";
-            this.toolStripStatusLabel2.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.toolStripStatusLabel2.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
-            // BtnHint
+            // BtnCheckValues
             // 
-            this.BtnHint.Location = new System.Drawing.Point(12, 367);
-            this.BtnHint.Name = "BtnHint";
-            this.BtnHint.Size = new System.Drawing.Size(142, 23);
-            this.BtnHint.TabIndex = 4;
-            this.BtnHint.Text = "Hints";
-            this.BtnHint.UseVisualStyleBackColor = false;
-            this.BtnHint.Click += new System.EventHandler(this.BtnHint_Click);
+            this.BtnCheckValues.Location = new System.Drawing.Point(617, 367);
+            this.BtnCheckValues.Name = "BtnCheckValues";
+            this.BtnCheckValues.Size = new System.Drawing.Size(142, 23);
+            this.BtnCheckValues.TabIndex = 4;
+            this.BtnCheckValues.Text = "&Check Values";
+            this.BtnCheckValues.UseVisualStyleBackColor = false;
+            this.BtnCheckValues.Click += new System.EventHandler(this.BtnCheckValues_Click);
             // 
             // TxtActivities
             // 
@@ -229,6 +228,7 @@
             this.TxtActivities.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this.TxtActivities.Size = new System.Drawing.Size(598, 299);
             this.TxtActivities.TabIndex = 0;
+            this.TxtActivities.VisibleChanged += new System.EventHandler(this.TxtActivities_VisibleChanged);
             // 
             // menuStrip1
             // 
@@ -255,7 +255,7 @@
             this.ClientSize = new System.Drawing.Size(922, 416);
             this.Controls.Add(this.BtnViewCandidates);
             this.Controls.Add(this.TxtActivities);
-            this.Controls.Add(this.BtnHint);
+            this.Controls.Add(this.BtnCheckValues);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.toolStrip1);
             this.Controls.Add(this.menuStrip1);
@@ -292,11 +292,12 @@
         private System.Windows.Forms.ToolStripButton toolStripButton5;
         private System.Windows.Forms.ToolStripButton toolStripButton4;
         private System.Windows.Forms.ToolStripButton toolStripButton3;
-        private System.Windows.Forms.Button BtnHint;
+        private System.Windows.Forms.Button BtnCheckValues;
         public System.Windows.Forms.TextBox TxtActivities;
         public System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;
         private System.Windows.Forms.Button BtnViewCandidates;
+        private System.ComponentModel.BackgroundWorker backgroundWorker1;
     }
 }
 

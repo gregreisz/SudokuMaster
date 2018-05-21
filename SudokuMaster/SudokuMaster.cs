@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
@@ -13,6 +12,8 @@ namespace SudokuMaster
     public class CustomLabel : Label
     {
         public bool IsEraseable { get; set; }
+
+        public string IsLocked { get; set; }
     }
 
     public class Sudoku
@@ -158,9 +159,8 @@ namespace SudokuMaster
                         Width = CellWidth,
                         Height = CellHeight,
                         TextAlign = ContentAlignment.MiddleCenter,
-                        BackColor = _userBackcolor,
-                        ForeColor = _userForeColor,
-                        IsEraseable = false
+                        IsEraseable = true,
+                        IsLocked = null
                     };
                     label.Click += (sender, e) => Form1._Form1.Cell_Click(sender);
                     Form1._Form1.Controls.Add(label);
@@ -172,8 +172,7 @@ namespace SudokuMaster
             // check to see if game has started
             if (!GameStarted)
             {
-                Console.Beep();
-                Form1._Form1.SetText(@"Click File->New to start a new game or File->Open to load an existing game");
+                Form1._Form1.SetStatus(@"Click File->New to start a new game or File->Open to load an existing game", true);
                 return;
             }
 
@@ -187,8 +186,7 @@ namespace SudokuMaster
                 // if cell is not eraseable then return
                 if (!label.IsEraseable)
                 {
-                    Console.Beep();
-                    Form1._Form1.SetText(@"This cell cannot be erased.");
+                    Form1._Form1.SetStatus2(@"This cell cannot be erased.", true);
                     return;
                 }
 
@@ -205,7 +203,8 @@ namespace SudokuMaster
 
                         // save the value in the array
                         SetCell(col, row, value);
-                        Form1._Form1.SetText($@"{value} erased at ({col},{row})");
+
+                        Form1._Form1.SetStatus2($@"{value} erased at ({col},{row})", true);
                     }
 
                     else
@@ -213,12 +212,12 @@ namespace SudokuMaster
                         // if move is not valid then return
                         if (!IsMoveValid(col, row, value))
                         {
-                            Console.Beep();
-                            Form1._Form1.SetStatus2 = $@"Invalid move at ({col},{row})";
+                            Form1._Form1.SetStatus2($@"Invalid move at ({col},{row})", true);
                             return;
                         }
 
                         SetCell(col, row, value);
+                        Form1._Form1.SetStatus2($"Saved {value} to ({col},{row}) successfully.", true);
                         UpdateCurrentGameState(col, row, value);
                         RefreshGameBoard();
 
@@ -227,7 +226,6 @@ namespace SudokuMaster
 
                         // saves the move into the stack
                         Moves.Push($"{label.Name}{value}");
-
 
 
                     }
@@ -240,7 +238,7 @@ namespace SudokuMaster
 
             if (IsPuzzleSolved())
             {
-                Form1._Form1.SetStatus2 = @"*****Puzzle Solved*****";
+                Form1._Form1.SetStatus2(@"*****Puzzle Solved*****", true);
             }
         }
 
@@ -249,7 +247,6 @@ namespace SudokuMaster
             // do not use Counter here loops break out when they find the match
             var index = 0;
             var sb = new StringBuilder(CurrentGameState);
-            Form1._Form1.SetText(CurrentGameState);
             foreach (var r in Enumerable.Range(1, 9))
             {
                 foreach (var c in Enumerable.Range(1, 9))
@@ -267,7 +264,6 @@ namespace SudokuMaster
 
             BreakLoops:
             CurrentGameState = sb.ToString();
-            Form1._Form1.SetText(CurrentGameState);
         }
 
         public bool IsPuzzleSolved()
@@ -386,13 +382,15 @@ namespace SudokuMaster
             Form1._Form1.SetText(sb.ToString());
         }
 
-        private void CheckValues()
+        public void CheckValues()
         {
             var sb = new StringBuilder();
             foreach (var row in Enumerable.Range(1, 9))
             {
                 foreach (var col in Enumerable.Range(1, 9))
+                {
                     sb.Append(PossibleValues[col, row] != null ? $"{PossibleValues[col, row]} " : $"{ActualValues[col, row]} ");
+                }
 
                 sb.AppendLine();
             }
@@ -457,89 +455,9 @@ namespace SudokuMaster
                 }
         }
 
-        public void DisplayElapsedTime()
-        {
-            var ss = Seconds;
-            int mm;
-
-            //TODO Time Elapsed 00:00:05.28
-
-            var label = Form1._Form1.toolStripStatusLabel1;
-
-            if (Seconds >= 3600 && Seconds < 219600)
-            {
-                ss = Seconds % 3600;
-                mm = Seconds / 3600;
-                var hh = Seconds / 219600;
-                string elapsedTime;
-                if (mm.ToString().Length == 1)
-                {
-                    elapsedTime = hh + ":0" + mm;
-                }
-                else
-                {
-                    elapsedTime = hh + ":" + mm;
-                }
-
-                if (ss.ToString().Length == 1)
-                {
-                    elapsedTime += ":0" + ss;
-                }
-                else
-                {
-                    elapsedTime += ":" + ss + "." + ss / 10;
-                }
-
-                label.Text = $@"Time Elapsed {elapsedTime}";
-            }
-
-            else if (ss >= 60 && ss < 3600)
-            {
-                ss = Seconds % 60;
-                mm = Seconds / 60;
-                string elapsedTime;
-                if (ss.ToString().Length == 1 && Seconds >= 60)
-                {
-                    elapsedTime = mm + ":" + "0" + ss;
-                }
-                else
-                {
-                    elapsedTime = mm + ":" + ss;
-                }
-
-                label.Text = $@"Time Elapsed {elapsedTime}";
-            }
-            else if (Seconds > 0 && Seconds < 60)
-            {
-                label.Text = $@"Time Elapsed 00:00:{ss}";
-            }
-
-            Seconds += 1;
-        }
-
-        public string ReadInSavedGame()
-        {
-            var contents = string.Empty;
-            var fileDialog = new OpenFileDialog
-            {
-                Filter = @"SDO files (*.sdo)|*.sdo|All files (*.*)|*.*",
-                FilterIndex = 1,
-                RestoreDirectory = false
-            };
-
-            if (fileDialog.ShowDialog() != DialogResult.OK)
-            {
-                return contents;
-            }
-
-            contents = File.ReadAllText(fileDialog.FileName);
-            SaveFileName = fileDialog.FileName;
-
-            return contents;
-        }
-
         public void RefreshGameBoard()
         {
+
             var contents = CurrentGameState;
 
             // set up the board with the current game state
@@ -573,6 +491,7 @@ namespace SudokuMaster
                     }
                 }
             }
+
         }
 
         public string LoadGameFromDisk()
@@ -584,6 +503,7 @@ namespace SudokuMaster
                 RestoreDirectory = false
             };
 
+
             var contents = string.Empty;
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
@@ -591,17 +511,12 @@ namespace SudokuMaster
             }
 
             const char matchChar = '0';
-            _Sudoku.SaveFileName = Form1._Form1.SetStatus = openFileDialog1.FileName;
+            Form1._Form1.Text = _Sudoku.SaveFileName = openFileDialog1.FileName;
             _Sudoku.CountOfClues = contents.Length - contents.Count(x => x == matchChar);
             _Sudoku.CurrentGameState = _Sudoku.FilterFileInput(contents);
 
             return contents;
 
-        }
-
-        public void SetToCurrentGameState()
-        {
-            var contents = CurrentGameState;
         }
 
         public bool IsMoveValid(int col, int row, int value)
@@ -744,94 +659,43 @@ namespace SudokuMaster
                 return;
             }
 
-            label.IsEraseable = true;
             // if erasing a cell, you need to reset the values for all cells
             if (value > 0)
             {
                 // this has to show a start clue
-                label.IsEraseable = false;
-                label.BackColor = _fixedBackcolor;
-                label.ForeColor = _fixedForecolor;
+                if (string.IsNullOrEmpty(label.IsLocked) || label.IsLocked == "true")
+                {
+                    label.IsEraseable = false;
+                    label.IsLocked = "true";
+                    label.BackColor = _fixedBackcolor;
+                    label.ForeColor = _fixedForecolor;
+                }
+
                 label.Font = new Font(labelLargeFontName, labelSizeLarge, label.Font.Style | FontStyle.Bold);
                 label.Text = value.ToString();
                 Counter++;
-                Form1._Form1.SetText($"{Counter} was from ({col},{row}) value was {value} and condition was value  > 0.".PadLeft(59).PadRight(59));
             }
             else if (value == 0)
             {
+                label.IsLocked = "false";
                 label.BackColor = _userBackcolor;
                 label.ForeColor = _userForeColor;
                 label.Font = new Font(labelSmallFontName, labelSizeSmall, label.Font.Style | FontStyle.Bold);
                 label.Text = FixupPossibleValues(CalculatePossibleValues(col, row));
                 Counter++;
-                Form1._Form1.SetText($"{Counter} was from ({col},{row}) value was {value} and condition was value == 0.".PadLeft(59).PadRight(59));
             }
             else if (value > 0 && label.IsEraseable)
             {
+                label.IsLocked = "false";
                 label.BackColor = _userBackcolor;
                 label.ForeColor = _userForeColor;
                 label.Font = new Font(labelLargeFontName, labelSizeLarge, label.Font.Style | FontStyle.Bold);
                 label.Text = value.ToString();
                 Counter++;
-                Form1._Form1.SetText($"{Counter} was from ({col},{row}) value was {value} and condition was value == 0.".PadLeft(59).PadRight(59));
 
             }
 
         }
-
-        //private string RefreshPossibleValues(int col, int row)
-        //{
-        //    var p = CalculatePossibleValues(col, row);
-        //    FilterFileInput(p);
-        //    var lf = Environment.NewLine;
-        //    p = $"{p.Substring(0, 3)}{lf}{p.Substring(3, 3)}{lf}{p.Substring(6, 3)}";
-        //    return p;
-        //}
-
-        //public void RefreshAllPossiblesValues()
-        //{
-        //    var line = new string('*', 47);
-        //    var sb = new StringBuilder { Length = 0 };
-
-        //    sb.AppendLine(line);
-        //    foreach (var col in Enumerable.Range(1, 9))
-        //        foreach (var row in Enumerable.Range(1, 9))
-        //        {
-        //            var control = Form1._Form1.Controls.Find($"{col}{row}", true).FirstOrDefault();
-        //            var label = (CustomLabel)control;
-        //            if (label == null)
-        //            {
-        //                throw new Exception($"The value of ({col},{row}) was null.");
-        //            }
-
-
-        //            if (!label.IsEraseable)
-        //            {
-        //                label.BackColor = _userBackcolor;
-        //                label.ForeColor = _userForeColor;
-
-        //                if (ActualValues[col, row] == 0)
-        //                {
-        //                    label.Font = new Font(labelSmallFontName, labelSizeSmall, label.Font.Style | FontStyle.Bold);
-        //                    var possibles = label.Text = RefreshPossibleValues(col, row);
-        //                    sb.AppendLine($"({col},{row}) ({ActualValues[col, row]}) ({possibles})");
-        //                }
-        //                else if (ActualValues[col, row] > 0)
-        //                {
-        //                    label.Font = new Font(labelLargeFontName, labelSizeLarge, label.Font.Style | FontStyle.Bold);
-        //                    label.Text = ActualValues[col, row].ToString();
-        //                    sb.AppendLine($"({col},{row}) ({ActualValues[col, row]})");
-        //                }
-        //            }
-
-        //            if (row % 9 == 0)
-        //            {
-        //                sb.AppendLine(line);
-        //            }
-        //        }
-
-        //    Form1._Form1.SetText(sb.ToString());
-        //}
 
         public void SetMenuItemChecked(ToolStripMenuItem menuItem)
         {
@@ -870,16 +734,7 @@ namespace SudokuMaster
             }
         }
 
-        public void StartNewGame()
-        {
-            Seconds = 0;
-            ClueCellsAreLocked = false;
-            CountOfClues = 0;
-            Counter = 0;
-            GameStarted = true;
-            Form1._Form1.timer1.Enabled = true;
-            Form1._Form1.SetStatus2 = @"New game started";
-        }
+
 
     }
 }

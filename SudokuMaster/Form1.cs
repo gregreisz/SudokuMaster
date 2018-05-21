@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using System.ComponentModel;
+using System.Threading;
 
 namespace SudokuMaster
 {
@@ -11,9 +12,9 @@ namespace SudokuMaster
     {
         void SetText(string input);
 
-        string SetStatus { set; }
+        void SetStatus(string value, bool beep);
 
-        string SetStatus2 { set; }
+        void SetStatus2(string value, bool beep);
 
         void SetLabel(int col, int row, string input);
 
@@ -33,15 +34,20 @@ namespace SudokuMaster
         public Sudoku Sudoku { get => sudoku; set => sudoku = value; }
 
         #region Public Methods for Referencing Form1 Controls
-        public string SetStatus
+
+        public void SetStatus(string value, bool beep = false)
         {
-            set => toolStripStatusLabel1.Text = value;
+            if(beep) Console.Beep();
+            toolStripStatusLabel1.Text = value;
         }
 
-        public string SetStatus2
+        public void SetStatus2(string value, bool beep = false)
         {
-            set => toolStripStatusLabel2.Text = value;
+            if (beep) Console.Beep();
+            toolStripStatusLabel2.Text = value;
         }
+
+        public DateTime StartTime { get => startTime; set => startTime = value; }
 
         public void SetLabel(int col, int row, string input)
         {
@@ -54,7 +60,10 @@ namespace SudokuMaster
 
         public void SetText(string input)
         {
-            TxtActivities.AppendText(input + Environment.NewLine);
+            TxtActivities.Clear();
+            TxtActivities.AppendText(Environment.NewLine + input);
+            TxtActivities.SelectionStart = TxtActivities.TextLength;
+            TxtActivities.ScrollToCaret();
         }
 
         #endregion
@@ -62,50 +71,56 @@ namespace SudokuMaster
         public Form1()
         {
             InitializeComponent();
+
             _Form1 = this;
+
+            backgroundWorker1.DoWork += BackgroundWorker1_DoWork;
+            backgroundWorker1.ProgressChanged += BackgroundWorker1_ProgressChanged;
+            backgroundWorker1.RunWorkerCompleted += BackgroundWorker1_RunWorkerCompleted;
+            backgroundWorker1.WorkerReportsProgress = backgroundWorker1.WorkerSupportsCancellation = true;
+            backgroundWorker1.RunWorkerAsync();
         }
 
-        //private void BtnRefreshGameBoard_Click(object sender, EventArgs e)
-        //{
-        //    const char matchChar = '0';
-        //    var contents = string.Empty;
-        //    Sudoku.CountOfClues = contents.Length - contents.Count(x => x == matchChar);
-        //    Sudoku.CurrentGameState = contents = Sudoku.FilterFileInput(contents);
+        private DateTime startTime;
 
-        //    // initialize the board
-        //    var counter = 0;
-        //    foreach (var row in Enumerable.Range(1, 9))
-        //    {
-        //        foreach (var col in Enumerable.Range(1, 9))
-        //        {
-        //            Sudoku.SetCell(col, row, int.Parse(contents[counter].ToString()));
-        //            counter += 1;
-        //        }
+        private bool mCancel;
 
-        //    }
-        //}
-
-        //private void BtnCheckCandidates_Click(object sender, EventArgs e)
-        //{
-        //    TxtActivities.Clear();
-        //    TxtActivities.SelectionLength = 0;
-        //    TxtActivities.ScrollToCaret();
-        //    Sudoku.CheckCandidates();
-        //}
-
-        private void BtnHint_Click(object sender, EventArgs e)
+        private void BackgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            // show hints one cell at a time
-            Sudoku.HintsMode = true;
-            try
+            if (e.Error != null) MessageBox.Show(e.Error.ToString());
+            if (mCancel) Close();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (backgroundWorker1.IsBusy) mCancel = e.Cancel = true;
+            backgroundWorker1.CancelAsync();
+        }
+
+        private void BackgroundWorker1_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            SetStatus(e.UserState as string);
+        }
+
+        private void BackgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
+        {
+            while (!backgroundWorker1.CancellationPending)
             {
-                Sudoku.CheckColumnsAndRows();
+                var elapsed = DateTime.Now.Subtract(startTime);
+
+                var etime = $"Time Elapsed {elapsed.Hours:00}:{elapsed.Minutes:00}:{elapsed.Seconds:00}";
+                backgroundWorker1.ReportProgress(0, etime);
+                Thread.Sleep(15);
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show(@"Please undo your move", @"Invalid Move", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                MessageBox.Show(ex.Message);
-            }
+        }
+
+        private void BtnCheckValues_Click(object sender, EventArgs e)
+        {
+            TxtActivities.Clear();
+            Sudoku.CheckValues();
+            TxtActivities.SelectionStart = TxtActivities.TextLength;
+            TxtActivities.ScrollToCaret();
+
         }
 
         public void CandidatesToolStripMenuItem_Click(object sender, EventArgs e)
@@ -210,9 +225,13 @@ namespace SudokuMaster
             toolStripButton9.Click += ToolStripButton_Click;
             toolStripButton10.Click += ToolStripButton_Click;
 
+
+
             CreateMainMenu();
 
             Sudoku.AddLabelsToBoard();
+
+            //SetStatus = "Time Elapsed 00:00:00.00";
         }
 
         private void Form1_Paint(object sender, PaintEventArgs e)
@@ -267,14 +286,8 @@ namespace SudokuMaster
             // ask user if they want to save their current game to disk if any
             if (GetGameSaveInfo()) return;
 
-            Sudoku.StartNewGame();
+            StartNewGame();
 
-            Array.Clear(Sudoku.ActualValues, 0, Sudoku.ActualValues.Length);
-            Array.Clear(Sudoku.PossibleValues, 0, Sudoku.PossibleValues.Length);
-
-            // initialize the stacks
-            Sudoku.Moves = new Stack<string>();
-            Sudoku.RedoMoves = new Stack<string>();
 
             // load the game from disk
             Sudoku.CurrentGameState = Sudoku.LoadGameFromDisk();
@@ -282,13 +295,14 @@ namespace SudokuMaster
             // set up the board with the saved game
             Sudoku.RefreshGameBoard();
 
+
             //Sudoku.Counter = 0;
             //var counter = 0;
             //foreach (var row in Enumerable.Range(1, 9))
             //{
             //    foreach (var col in Enumerable.Range(1, 9))
             //    {
-            //        var value = int.Parse(contents[counter].ToString());
+            //        var value = int.Parse(Sudoku.CurrentGameState[counter].ToString());
             //        counter++;
             //        Sudoku.SetCell(col, row, value);
             //    }
@@ -308,10 +322,26 @@ namespace SudokuMaster
             //        var label = (Label)control;
             //        if (label != null)
             //        {
-            //            label.Text = FixupPossibleValues(CalculatePossibleValues(c, r));
+            //            label.Text = Sudoku.FixupPossibleValues(Sudoku.CalculatePossibleValues(c, r));
             //        }
             //    }
             //}
+
+            startTime = DateTime.Now;
+        }
+
+        public void StartNewGame()
+        {
+            Array.Clear(Sudoku.ActualValues, 0, Sudoku.ActualValues.Length);
+            Array.Clear(Sudoku.PossibleValues, 0, Sudoku.PossibleValues.Length);
+
+            // initialize the stacks
+            Sudoku.Moves = new Stack<string>();
+            Sudoku.RedoMoves = new Stack<string>();
+
+            Sudoku.Counter = 0;
+            Sudoku.GameStarted = true;
+            SetStatus2(@"New game started");
         }
 
         private bool GetGameSaveInfo()
@@ -358,7 +388,7 @@ namespace SudokuMaster
             if (!Sudoku.GameStarted)
             {
                 Console.Beep();
-                SetStatus2 = @"Game not started yet.";
+                SetStatus2(@"Game not started yet.");
                 return;
             }
 
@@ -369,16 +399,11 @@ namespace SudokuMaster
         {
             if (!Sudoku.GameStarted)
             {
-                SetStatus2 = @"Game not started yet.";
+                SetStatus2(@"Game not started yet.");
                 return;
             }
 
             Sudoku.SaveGameToDisk(false);
-        }
-
-        private void Timer1_Tick(object sender, EventArgs e)
-        {
-            Sudoku.DisplayElapsedTime();
         }
 
         private void ToolStripButton_Click(object sender, EventArgs e)
@@ -420,14 +445,26 @@ namespace SudokuMaster
             int row = int.Parse(s[1].ToString());
 
             Sudoku.SetCell(col, row, 0);
-            SetStatus2 = $@"Value removed at ({col},{row}).";
+            SetStatus2($@"Value removed at ({col},{row}).");
         }
 
         private void BtnViewCandidates_Click(object sender, EventArgs e)
         {
             TxtActivities.Clear();
             Sudoku.CheckCandidates();
-            TxtActivities.SelectionLength = 0;
+            TxtActivities.SelectionStart = TxtActivities.TextLength;
+            TxtActivities.ScrollToCaret();
+
+        }
+
+        private void TxtActivities_VisibleChanged(object sender, EventArgs e)
+        {
+            if (!TxtActivities.Visible)
+            {
+                return;
+            }
+
+            TxtActivities.SelectionStart = TxtActivities.TextLength;
             TxtActivities.ScrollToCaret();
         }
     }
