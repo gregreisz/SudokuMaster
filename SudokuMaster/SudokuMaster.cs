@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
@@ -49,6 +50,13 @@ namespace SudokuMaster
         public string SaveFileName { get; set; }
 
         public string CurrentGameState { get; set; }
+
+        public string FixupPossibleValues(string possibleValues)
+        {
+            var lf = Environment.NewLine;
+            var s = possibleValues;
+            return string.Format("{0}{1}{2}{1}{3}", s.Substring(0, 3), lf, s.Substring(3, 3), s.Substring(6, 3));
+        }
 
         // number the user selected from the toolStrip on enter into a cell
         public int SelectedNumber { get; set; }
@@ -150,9 +158,9 @@ namespace SudokuMaster
                         Width = CellWidth,
                         Height = CellHeight,
                         TextAlign = ContentAlignment.MiddleCenter,
-                        IsEraseable = true,
                         BackColor = _userBackcolor,
-                        ForeColor = _userForeColor
+                        ForeColor = _userForeColor,
+                        IsEraseable = false
                     };
                     label.Click += (sender, e) => Form1._Form1.Cell_Click(sender);
                     Form1._Form1.Controls.Add(label);
@@ -561,7 +569,7 @@ namespace SudokuMaster
                     var label = (Label)control;
                     if (label != null)
                     {
-                        label.Text = CalculatePossibleValues(c, r);
+                        label.Text = FixupPossibleValues(CalculatePossibleValues(c, r));
                     }
                 }
             }
@@ -727,10 +735,6 @@ namespace SudokuMaster
         {
             // save the value in the array
             ActualValues[col, row] = value;
-            var s = CalculatePossibleValues(col, row);
-
-            var lf = Environment.NewLine;
-            var possibleValues = string.Format("{0}{1}{2}{1}{3}", s.Substring(0, 3), lf, s.Substring(3, 3), s.Substring(6, 3));
 
             // locate the CustomLabel control
             var control = Form1._Form1.Controls.Find($"{col}{row}", true).FirstOrDefault();
@@ -740,6 +744,7 @@ namespace SudokuMaster
                 return;
             }
 
+            label.IsEraseable = true;
             // if erasing a cell, you need to reset the values for all cells
             if (value > 0)
             {
@@ -757,7 +762,7 @@ namespace SudokuMaster
                 label.BackColor = _userBackcolor;
                 label.ForeColor = _userForeColor;
                 label.Font = new Font(labelSmallFontName, labelSizeSmall, label.Font.Style | FontStyle.Bold);
-                label.Text = possibleValues;
+                label.Text = FixupPossibleValues(CalculatePossibleValues(col, row));
                 Counter++;
                 Form1._Form1.SetText($"{Counter} was from ({col},{row}) value was {value} and condition was value == 0.".PadLeft(59).PadRight(59));
             }
@@ -774,59 +779,59 @@ namespace SudokuMaster
 
         }
 
-        private string RefreshPossibleValues(int col, int row)
-        {
-            var p = CalculatePossibleValues(col, row);
-            FilterFileInput(p);
-            var lf = Environment.NewLine;
-            p = $"{p.Substring(0, 3)}{lf}{p.Substring(3, 3)}{lf}{p.Substring(6, 3)}";
-            return p;
-        }
+        //private string RefreshPossibleValues(int col, int row)
+        //{
+        //    var p = CalculatePossibleValues(col, row);
+        //    FilterFileInput(p);
+        //    var lf = Environment.NewLine;
+        //    p = $"{p.Substring(0, 3)}{lf}{p.Substring(3, 3)}{lf}{p.Substring(6, 3)}";
+        //    return p;
+        //}
 
-        public void RefreshAllPossiblesValues()
-        {
-            var line = new string('*', 47);
-            var sb = new StringBuilder { Length = 0 };
+        //public void RefreshAllPossiblesValues()
+        //{
+        //    var line = new string('*', 47);
+        //    var sb = new StringBuilder { Length = 0 };
 
-            sb.AppendLine(line);
-            foreach (var col in Enumerable.Range(1, 9))
-                foreach (var row in Enumerable.Range(1, 9))
-                {
-                    var control = Form1._Form1.Controls.Find($"{col}{row}", true).FirstOrDefault();
-                    var label = (CustomLabel)control;
-                    if (label == null)
-                    {
-                        throw new Exception($"The value of ({col},{row}) was null.");
-                    }
+        //    sb.AppendLine(line);
+        //    foreach (var col in Enumerable.Range(1, 9))
+        //        foreach (var row in Enumerable.Range(1, 9))
+        //        {
+        //            var control = Form1._Form1.Controls.Find($"{col}{row}", true).FirstOrDefault();
+        //            var label = (CustomLabel)control;
+        //            if (label == null)
+        //            {
+        //                throw new Exception($"The value of ({col},{row}) was null.");
+        //            }
 
 
-                    if (!label.IsEraseable)
-                    {
-                        label.BackColor = _userBackcolor;
-                        label.ForeColor = _userForeColor;
+        //            if (!label.IsEraseable)
+        //            {
+        //                label.BackColor = _userBackcolor;
+        //                label.ForeColor = _userForeColor;
 
-                        if (ActualValues[col, row] == 0)
-                        {
-                            label.Font = new Font(labelSmallFontName, labelSizeSmall, label.Font.Style | FontStyle.Bold);
-                            var possibles = label.Text = RefreshPossibleValues(col, row);
-                            sb.AppendLine($"({col},{row}) ({ActualValues[col, row]}) ({possibles})");
-                        }
-                        else if (ActualValues[col, row] > 0)
-                        {
-                            label.Font = new Font(labelLargeFontName, labelSizeLarge, label.Font.Style | FontStyle.Bold);
-                            label.Text = ActualValues[col, row].ToString();
-                            sb.AppendLine($"({col},{row}) ({ActualValues[col, row]})");
-                        }
-                    }
+        //                if (ActualValues[col, row] == 0)
+        //                {
+        //                    label.Font = new Font(labelSmallFontName, labelSizeSmall, label.Font.Style | FontStyle.Bold);
+        //                    var possibles = label.Text = RefreshPossibleValues(col, row);
+        //                    sb.AppendLine($"({col},{row}) ({ActualValues[col, row]}) ({possibles})");
+        //                }
+        //                else if (ActualValues[col, row] > 0)
+        //                {
+        //                    label.Font = new Font(labelLargeFontName, labelSizeLarge, label.Font.Style | FontStyle.Bold);
+        //                    label.Text = ActualValues[col, row].ToString();
+        //                    sb.AppendLine($"({col},{row}) ({ActualValues[col, row]})");
+        //                }
+        //            }
 
-                    if (row % 9 == 0)
-                    {
-                        sb.AppendLine(line);
-                    }
-                }
+        //            if (row % 9 == 0)
+        //            {
+        //                sb.AppendLine(line);
+        //            }
+        //        }
 
-            Form1._Form1.SetText(sb.ToString());
-        }
+        //    Form1._Form1.SetText(sb.ToString());
+        //}
 
         public void SetMenuItemChecked(ToolStripMenuItem menuItem)
         {

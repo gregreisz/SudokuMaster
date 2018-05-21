@@ -277,39 +277,41 @@ namespace SudokuMaster
             Sudoku.RedoMoves = new Stack<string>();
 
             // load the game from disk
-            var contents = Sudoku.CurrentGameState = Sudoku.LoadGameFromDisk();
+            Sudoku.CurrentGameState = Sudoku.LoadGameFromDisk();
 
             // set up the board with the saved game
-            Sudoku.Counter = 0;
-            var counter = 0;
-            foreach (var row in Enumerable.Range(1, 9))
-            {
-                foreach (var col in Enumerable.Range(1, 9))
-                {
-                    var value = int.Parse(contents[counter].ToString());
-                    counter++;
-                    Sudoku.SetCell(col, row, value);
-                }
+            Sudoku.RefreshGameBoard();
 
-            }
+            //Sudoku.Counter = 0;
+            //var counter = 0;
+            //foreach (var row in Enumerable.Range(1, 9))
+            //{
+            //    foreach (var col in Enumerable.Range(1, 9))
+            //    {
+            //        var value = int.Parse(contents[counter].ToString());
+            //        counter++;
+            //        Sudoku.SetCell(col, row, value);
+            //    }
 
-            for (var r = 1; r <= 9; r++)
-            {
-                for (var c = 1; c <= 9; c++)
-                {
-                    if (Sudoku.Actual[c, r] != 0)
-                    {
-                        continue;
-                    }
+            //}
 
-                    var control = Controls.Find($"{c}{r}", true).FirstOrDefault();
-                    var label = (Label)control;
-                    if (label != null)
-                    {
-                        label.Text = Sudoku.CalculatePossibleValues(c, r);
-                    }
-                }
-            }
+            //for (var r = 1; r <= 9; r++)
+            //{
+            //    for (var c = 1; c <= 9; c++)
+            //    {
+            //        if (Sudoku.Actual[c, r] != 0)
+            //        {
+            //            continue;
+            //        }
+
+            //        var control = Controls.Find($"{c}{r}", true).FirstOrDefault();
+            //        var label = (Label)control;
+            //        if (label != null)
+            //        {
+            //            label.Text = FixupPossibleValues(CalculatePossibleValues(c, r));
+            //        }
+            //    }
+            //}
         }
 
         private bool GetGameSaveInfo()
