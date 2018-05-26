@@ -1,0 +1,247 @@
+/* RESET */
+
+html,body,div,ul,ol,li,dl,dt,dd,h1,h2,h3,h4,h5,h6,pre,form,p,blockquote,fieldset,input,tr,td { margin: 0; padding: 0; }
+h1,h2,h3,h4,h5,h6,pre,code,address,caption,cite,code,em,strong,th { font-size: 1em; font-weight: normal; font-style: normal; }
+ul,ol { list-style: none; }
+fieldset,img { border: none; }
+caption,th { text-align: left; }
+table { border-collapse: collapse; border-spacing: 0; }
+
+body 
+{ 
+	font-family: "Open Sans", sans-serif, Arial, Helvetica; 	
+	font-size: 23px;
+	font-weight: bold;
+	margin: 0;
+	background-color: #192534;
+	color: black;
+	-ms-overflow-style: none;
+}
+
+/* fixes issue of iOS scaling up text, making it look too big */
+@media screen and (max-device-width: 480px)
+{
+	body
+	{
+		-webkit-text-size-adjust: none;
+	}
+}
+
+a
+{
+	color: #d70000;
+	text-decoration: underline;
+	font-weight: bold;
+}
+
+a:hover
+{
+	text-decoration: none;
+}
+
+ul
+{
+	list-style-type: disc;
+	list-style-position: inside;
+}
+	
+li
+{
+	padding: 2px 0px 0px 15px;
+}
+
+h1
+{
+	font-size: 23px;	
+	font-weight: bold;
+}
+
+h2
+{
+	font-weight: bold;
+	font-size: 18px;
+}
+
+h3
+{
+	font-weight: bold;
+	font-size: 17px;
+}
+
+.button
+{
+	/* 9-slice image */
+	border-style: solid;
+	border-width: 16px 14px 16px;
+	-moz-border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/button.png) 16 14 16 stretch;
+	-webkit-border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/button.png) 16 14 16 stretch;
+	-o-border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/button.png) 16 14 16 stretch;
+	border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/button.png) 16 14 16 fill stretch;
+
+	/* put text in center */
+	height: 20px; /* set to same as line-height for it to center properly */
+	line-height: 20px; /* set to same as height for it to center properly */
+	display: inline-block;	
+	text-align: center;
+	vertical-align: middle;
+	
+	/* text */
+	font-size: 23px;	
+	font-weight: bold;	
+	color: black;
+	text-decoration: none;
+}
+
+.button:hover
+{
+	text-decoration: underline;
+}
+
+.header
+{
+	background-color: white;
+	vertical-align: bottom;
+	font-size: 23px;
+	font-weight: bold;
+}
+
+.header_link
+{
+	color: #d70000;
+	text-decoration: none;
+}
+
+.header_link:hover
+{
+	text-decoration: underline;
+}
+
+.block_link
+{
+	text-decoration: inherit;
+	color: inherit;
+}
+
+.bottom_link
+{
+	color: white;
+	text-decoration: none;
+	font-weight: bold;
+}
+
+.bottom_link:hover
+{
+	text-decoration: underline;
+}
+
+.facebook_link
+{
+	margin-right: 20px;
+	width: 48px;
+	height: 48px;
+	display: block;
+	background: transparent url('https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/facebook.png') center top no-repeat;
+}
+
+.newsletter_link
+{
+	margin-right: 20px;
+	width: 48px;
+	height: 48px;
+	display: block;
+	background: transparent url('https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/newsletter.png') center top no-repeat;
+}
+
+.question
+{
+	font-weight: bold;
+	color: #0000d7;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.question:hover
+{
+	font-weight: bold;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.block_header
+{
+	/* 9-slice image */
+	border-style: solid;
+	border-width: 16px 14px 16px;
+	-moz-border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/tab_header.png) 16 14 16 stretch;
+	-webkit-border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/tab_header.png) 16 14 16 stretch;
+	-o-border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/tab_header.png) 16 14 16 stretch;
+	border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/tab_header.png) 16 14 16 fill stretch;
+
+	/* put text in center */
+	line-height: 20px; /* set to same as height for it to center properly */
+	display: inline-block;
+	text-align: center;
+	vertical-align: middle;
+	
+	/* text */
+	color: white;
+	font-size: 23px;	
+	font-weight: bold;	
+	text-shadow: black 0px 1px 1px;
+	
+	/* container */
+	max-width: 1440px;
+}
+
+.block_container
+{
+	/* 9-slice image */
+	border-style: solid;
+	border-width: 6px 14px 6px;
+	-moz-border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/tab_container.png) 16 14 16 stretch;
+	-webkit-border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/tab_container.png) 16 14 16 stretch;
+	-o-border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/tab_container.png) 16 14 16 stretch;
+	border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/tab_container.png) 16 14 16 fill stretch;
+
+	/* text */
+	text-align: left;
+	font-size: 15px;
+	font-weight: normal;
+	
+	/* container */
+	min-height: 140px;
+	background-color: white;
+	
+	/* container */
+	max-width: 1440px;
+}
+
+.box_container
+{
+	/* 9-slice image */
+	border-style: solid;
+	border-width: 1px 1px 1px;
+	-moz-border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/tab_container.png) 16 14 16 stretch;
+	-webkit-border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/tab_container.png) 16 14 16 stretch;
+	-o-border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/tab_container.png) 16 14 16 stretch;
+	border-image: url(https://d2yxr8dmm6m6yk.cloudfront.net/web/assets/tab_container.png) 16 14 16 fill stretch;
+
+	/* text */
+	text-align: center;
+	font-size: 15px;
+	font-weight: normal;
+	
+	/* container */
+	min-height: 250px;
+	background-color: white;
+/*	min-width: 420px; */
+	width: 49%;
+	display: inline-block;
+	vertical-align: top;
+	margin-bottom: 10px;
+}
+
+/* auto-adjust box_container on different resolutions */
+@media only screen and (min-width: 783px) { .box_container{ width: 32.5%; } }
+@media only screen and (min-width: 522px) and (max-width: 783px) { .box_container{ width: 49%; } }
+@media only screen and (max-width: 522px) { .box_container{ width: 99%; } }

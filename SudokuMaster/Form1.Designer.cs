@@ -228,7 +228,6 @@
             this.TxtActivities.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this.TxtActivities.Size = new System.Drawing.Size(598, 299);
             this.TxtActivities.TabIndex = 0;
-            this.TxtActivities.VisibleChanged += new System.EventHandler(this.TxtActivities_VisibleChanged);
             // 
             // menuStrip1
             // 
