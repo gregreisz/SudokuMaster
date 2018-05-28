@@ -178,10 +178,11 @@
             // 
             // statusStrip1
             // 
+            this.statusStrip1.AutoSize = false;
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripStatusLabel1,
             this.toolStripStatusLabel2});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 394);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 428);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.statusStrip1.Size = new System.Drawing.Size(922, 22);
@@ -193,7 +194,7 @@
             this.toolStripStatusLabel1.ForeColor = System.Drawing.SystemColors.ControlText;
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
             this.toolStripStatusLabel1.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.toolStripStatusLabel1.Size = new System.Drawing.Size(438, 17);
+            this.toolStripStatusLabel1.Size = new System.Drawing.Size(453, 17);
             this.toolStripStatusLabel1.Spring = true;
             this.toolStripStatusLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
@@ -204,13 +205,13 @@
             this.toolStripStatusLabel2.LinkVisited = true;
             this.toolStripStatusLabel2.Name = "toolStripStatusLabel2";
             this.toolStripStatusLabel2.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.toolStripStatusLabel2.Size = new System.Drawing.Size(438, 17);
+            this.toolStripStatusLabel2.Size = new System.Drawing.Size(453, 17);
             this.toolStripStatusLabel2.Spring = true;
             this.toolStripStatusLabel2.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // BtnCheckValues
             // 
-            this.BtnCheckValues.Location = new System.Drawing.Point(617, 367);
+            this.BtnCheckValues.Location = new System.Drawing.Point(605, 367);
             this.BtnCheckValues.Name = "BtnCheckValues";
             this.BtnCheckValues.Size = new System.Drawing.Size(142, 23);
             this.BtnCheckValues.TabIndex = 4;
@@ -239,7 +240,7 @@
             // 
             // BtnViewCandidates
             // 
-            this.BtnViewCandidates.Location = new System.Drawing.Point(765, 367);
+            this.BtnViewCandidates.Location = new System.Drawing.Point(764, 367);
             this.BtnViewCandidates.Name = "BtnViewCandidates";
             this.BtnViewCandidates.Size = new System.Drawing.Size(142, 23);
             this.BtnViewCandidates.TabIndex = 8;
@@ -251,7 +252,10 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(922, 416);
+            this.AutoSize = true;
+            this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.CausesValidation = false;
+            this.ClientSize = new System.Drawing.Size(922, 450);
             this.Controls.Add(this.BtnViewCandidates);
             this.Controls.Add(this.TxtActivities);
             this.Controls.Add(this.BtnCheckValues);
@@ -261,6 +265,7 @@
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "Form1";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "Sudoku Master";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.Form1_Paint);

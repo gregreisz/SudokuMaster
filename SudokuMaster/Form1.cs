@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -21,19 +22,19 @@ namespace SudokuMaster
 
     }
 
-    public partial class Form1 : Form, IForm1, INotifyPropertyChanged
+    public partial class Form1 : Form, IForm1
     {
 
         #region
-        //private readonly string labelSmallFontName = "Consolas";
-        //private readonly int labelSizeSmall = 6;
-        //private readonly int labelSizeLarge = 10;
         //private int Level { get; set; } = 1; 
         #endregion
 
         private const string saveGame = "Do you want to save current game?";
         private const string saveCurrentGame = "Save current game?";
-        private const string labelLargeFontName = "Verdana";
+        public const string LargeFontName = "Verdana";
+        public const string SmallFontName = "Consolas";
+        public const int SmallFontSize = 6;
+        public const int LargeFontSize = 10;
         private const int CellHeight = 32;
         private const int CellWidth = 32;
         private const int XOffset = -20;
@@ -64,7 +65,7 @@ namespace SudokuMaster
             // find the CustomLabel control
             var control = Controls.Find($"{col}{row}", true).FirstOrDefault();
             if (!(control is CustomLabel label)) return;
-            label.Font = new Font(labelLargeFontName, 10, label.Font.Style | FontStyle.Bold);
+            label.Font = new Font(LargeFontName, 10, label.Font.Style | FontStyle.Bold);
             label.Text = input;
         }
 
@@ -221,28 +222,55 @@ namespace SudokuMaster
         //    SetMenuItemChecked(menuItem);
         //}
 
+        private DateTime? _gameStartTime;
 
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        private bool _gameHasStarted = true;
-
-        public bool GameHasStarted
+        protected void OnPropertyChanged(PropertyChangedEventArgs e)
         {
-            get => _gameHasStarted;
+            var handler = PropertyChanged;
+            handler?.Invoke(this, e);
+        }
+
+        protected void OnPropertyChanged(string propertyName)
+        {
+            OnPropertyChanged(new PropertyChangedEventArgs(propertyName));
+        }
+
+        public DateTime? GameStartTime
+        {
+            get { return _gameStartTime; }
             set
             {
-                _gameHasStarted = value;
-
-                // Call OnPropertyChanged whenever the property is updated
-                OnPropertyChanged(nameof(GameHasStarted));
+                if (value != _gameStartTime)
+                {
+                    _gameStartTime = value;
+                    OnPropertyChanged(nameof(GameStartTime));
+                    OnGameStartTimeChanged(EventArgs.Empty);
+                }
             }
         }
 
-        // Create the OnPropertyChanged method to raise the event
-        protected void OnPropertyChanged(string name)
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void OnGameStartTimeChanged(EventArgs e)
         {
-            var handler = PropertyChanged;
-            handler?.Invoke(this, new PropertyChangedEventArgs(name));
+            var handler = GameStartTimeChanged;
+            handler?.Invoke(this, e);
+        }
+
+
+        public event EventHandler GameStartTimeChanged;
+
+        public void StartNewGame()
+        {
+            Array.Clear(_sudoku.CellValues, 0, _sudoku.CellValues.Length);
+            Array.Clear(_sudoku.Candidates, 0, _sudoku.Candidates.Length);
+            GameStartTime = DateTime.Now;
+
+            // initialize the stacks
+            _sudoku.Moves = new Stack<string>();
+            _sudoku.RedoMoves = new Stack<string>();
+
+            SetStatus(@"New game started");
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -263,13 +291,14 @@ namespace SudokuMaster
 
             AddLabelsToBoard();
 
-            //SetStatus = "Time Elapsed 00:00:00.00";
         }
 
-        public void GameHasStarted_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            SetText($"sender{sender} {e} {DateTime.Now}");
-        }
+        //public DateTime GameHasStarted_OnPropertyChanged()
+        //{
+        //    SetText($"{DateTime.Now}");
+
+        //    return DateTime.Now;
+        //}
 
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
@@ -378,32 +407,28 @@ namespace SudokuMaster
         {
 
             // ask user if they want to save their current game to disk if any
-            if (GetGameSaveInfo()) return;
+            //if (GetGameSaveInfo()) return;
 
-            _sudoku.StartNewGame();
+            StartNewGame();
 
 
             // load the game from disk
-            _sudoku.CurrentGameState = _sudoku.LoadGameFromDisk();
+            var contents = _sudoku.LoadGameFromDisk();
 
             // set up the board with the saved game
-            _sudoku.RefreshGameBoard();
+            // _sudoku.RefreshGameBoard();
 
 
-            //Sudoku.Counter = 0;
-            //var counter = 0;
-            //foreach (var row in Enumerable.Range(1, 9))
-            //{
-            //    foreach (var col in Enumerable.Range(1, 9))
-            //    {
-            //        var value = int.Parse(Sudoku.CurrentGameState[counter].ToString());
-            //        counter++;
-            //        Sudoku.SetCell(col, row, value);
-            //    }
-
-            //}
-
-
+            var counter = 0;
+            foreach (var row in Enumerable.Range(1, 9))
+            {
+                foreach (var col in Enumerable.Range(1, 9))
+                {
+                    var value = int.Parse(contents[counter].ToString());
+                    counter++;
+                    SetCell(col, row, value);
+                }
+            }
 
             StartTime = DateTime.Now;
         }
@@ -417,29 +442,27 @@ namespace SudokuMaster
 
             // add the labels
             foreach (var row in Enumerable.Range(1, 9))
-            foreach (var col in Enumerable.Range(1, 9))
-            {
-                location.X = col * (CellWidth + 1) + XOffset;
-                location.Y = row * (CellHeight + 1) + YOffset;
-                var label = new CustomLabel
+                foreach (var col in Enumerable.Range(1, 9))
                 {
-                    Name = col.ToString() + row,
-                    BorderStyle = BorderStyle.Fixed3D,
-                    Location = location,
-                    Width = CellWidth,
-                    Height = CellHeight,
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    IsEraseable = true,
-                    IsLocked = null
-                };
-                label.Click += (sender, e) => Cell_Click(sender);
-                Controls.Add(label);
-            }
+                    location.X = col * (CellWidth + 1) + XOffset;
+                    location.Y = row * (CellHeight + 1) + YOffset;
+                    var label = new CustomLabel
+                    {
+                        Name = col.ToString() + row,
+                        BorderStyle = BorderStyle.FixedSingle,
+                        Location = location,
+                        Width = CellWidth,
+                        Height = CellHeight,
+                        TextAlign = ContentAlignment.MiddleCenter
+                    };
+                    label.Click += (sender, e) => Cell_Click(sender);
+                    Controls.Add(label);
+                }
         }
 
         private bool GetGameSaveInfo()
         {
-            if (!GameHasStarted)
+            if (GameStartTime > DateTime.Now)
             {
                 return false;
             }
@@ -479,7 +502,7 @@ namespace SudokuMaster
 
         public void SaveAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!GameHasStarted)
+            if (GameStartTime > DateTime.Now)
             {
                 Console.Beep();
                 SetStatus2(@"Game not started yet.");
@@ -491,7 +514,7 @@ namespace SudokuMaster
 
         public void SaveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!GameHasStarted)
+            if (GameStartTime > DateTime.Now)
             {
                 SetStatus2(@"Game not started yet.");
                 return;
@@ -516,7 +539,7 @@ namespace SudokuMaster
             }
 
             // set the selected button to "checked"
-            var selectedButton = (ToolStripButton) sender;
+            var selectedButton = (ToolStripButton)sender;
             selectedButton.Checked = true;
 
             // set the appropriate number selected
@@ -551,10 +574,11 @@ namespace SudokuMaster
 
         }
 
-        public void SetCell(int col, int row, int value, bool eraseable = false)
+
+        public void SetCell(int col, int row, int value)
         {
             var control = Controls.Find($"{col}{row}", true).FirstOrDefault();
-            var cellLabel = (CustomLabel) control;
+            var cellLabel = (CustomLabel)control;
             if (cellLabel == null) return;
 
             // save the value in the array
@@ -563,9 +587,9 @@ namespace SudokuMaster
             // if erasing a cell, you need to reset the possible values for all cells
             if (value == 0)
             {
-                for (int r = 1; r <= 9; r++)
+                foreach (int r in Enumerable.Range(1, 9))
                 {
-                    for (int c = 1; c <= 9; c++)
+                    foreach (int c in Enumerable.Range(1, 9))
                     {
                         if (_sudoku.CellValues[c, r] == 0)
                         {
@@ -579,30 +603,36 @@ namespace SudokuMaster
                 _sudoku.Candidates[col, row] = value.ToString();
             }
 
-            // set the appearance for the Label control
-            if (value == 0) // erasing the cell
+            // set the appearance for the CustomLabel control
+            if (value == 0 && cellLabel.Value == null) // erasing the cell
             {
-                cellLabel.Text = string.Empty;
-                cellLabel.IsEraseable = eraseable;
+                cellLabel.Value = value;
+                cellLabel.IsEraseable = true;
                 cellLabel.BackColor = Color.LightYellow;
+                cellLabel.ForeColor = Color.Black;
+                cellLabel.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
             }
-            else
+            else if (value > 0 && cellLabel.Value == null)
             {
-                if (!eraseable) // means default puzzle values
-                {
-                    cellLabel.BackColor = Color.SteelBlue;
-                    cellLabel.ForeColor = Color.Blue;
-                }
-                else // means user-set value
-                {
-                    cellLabel.BackColor = Color.LightYellow;
-                    cellLabel.ForeColor = Color.Black;
-                }
-
-                cellLabel.Text = value.ToString();
+                cellLabel.Value = value;
+                cellLabel.IsEraseable = false;
+                cellLabel.BackColor = Color.SteelBlue;
+                cellLabel.ForeColor = Color.Blue;
+                cellLabel.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
             }
+            //else if (value > 0 && cellLabel.IsEraseable)
+            //{
+            //    cellLabel.IsEraseable = true;
+            //    cellLabel.BackColor = Color.LightYellow;
+            //    cellLabel.ForeColor = Color.Black;
+            //    cellLabel.Font = new Font(labelLargeFontName, labelSizeLarge, FontStyle.Bold);
+            //}
+
+            cellLabel.Text = value.ToString();
+            //if (value.ToString() == "0")
+            //{
+            //    cellLabel.ForeColor = cellLabel.BackColor;
+            //}
         }
-
-
     }
 }

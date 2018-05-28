@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -15,13 +16,12 @@ namespace SudokuMaster
     {
         public bool IsEraseable { get; set; }
 
-        public string IsLocked { get; set; }
+        public int? Value { get; set; }
     }
 
     public class Sudoku
     {
         public Sudoku _Sudoku;
-        private readonly Form1 form = Form1._Form1;
 
         public Sudoku()
         {
@@ -32,11 +32,8 @@ namespace SudokuMaster
 
         public ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-
-        #region Arrays for Sudoku Values
-
         // used to represent the values in the grid
-        public static int[,] Cell = new int[10, 10];
+        public int[,] Cell = new int[10, 10];
 
         public Stack<int[,]> ActualStack = new Stack<int[,]>();
 
@@ -53,37 +50,21 @@ namespace SudokuMaster
         public Stack<string[,]> PossibleStack = new Stack<string[,]>();
         public Stack<string> RedoMoves;
 
-        #endregion
-
-        #region Public Properties
-
+        public const string LargeFontName = "Verdana";
+        public const string SmallFontName = "Consolas";
+        public const int SmallFontSize = 6;
+        public const int LargeFontSize = 10;
 
         public string SavedFileName { get; set; }
 
-        public void StartNewGame()
-        {
-            Array.Clear(CellValues, 0, CellValues.Length);
-            Array.Clear(Candidates, 0, Candidates.Length);
-
-            // initialize the stacks
-            Moves = new Stack<string>();
-            RedoMoves = new Stack<string>();
-
-            //Counter = 0;
-            form.GameHasStarted = true;
-            form.SetStatus(@"New game started");
-        }
-
         public string CurrentGameState { get; set; }
 
-        public static string TransformPossibleValues(string possibleValues)
+        public string TransformPossibleValues(string possibleValues)
         {
             var lf = Environment.NewLine;
             var s = possibleValues;
             return string.Format("{0}{1}{2}{1}{3}", s.Substring(0, 3), lf, s.Substring(3, 3), s.Substring(6, 3));
         }
-
-
 
         public int SelectedColumn { get; set; } = 1;
 
@@ -93,9 +74,6 @@ namespace SudokuMaster
 
         public int Counter { get; set; }
 
-        #endregion
-
-
         public string FilterFileInput(string input)
         {
             return !string.IsNullOrEmpty(input)
@@ -103,15 +81,12 @@ namespace SudokuMaster
                 : string.Empty;
         }
 
-
-
-
         public void SudokuBoardHandler(object sender)
         {
             // check to see if game has started
-            if (!form.GameHasStarted)
+            if (Form1._Form1.GameStartTime > DateTime.Now)
             {
-                form.SetStatus(@"Click File->New to start a new game or File->Open to load an existing game", true);
+                Form1._Form1.SetStatus(@"Click File->New to start a new game or File->Open to load an existing game", true);
                 return;
             }
 
@@ -119,13 +94,12 @@ namespace SudokuMaster
             {
                 var col = SelectedColumn = int.Parse(label.Name.Substring(0, 1));
                 var row = SelectedRow = int.Parse(label.Name.Substring(1, 1));
-
-                var value = form.SelectedNumber;
+                var value = Form1._Form1.SelectedNumber;
 
                 // if cell is not eraseable then return
-                if (!label.IsEraseable)
+                if (label.IsEraseable == false)
                 {
-                    form.SetStatus2(@"This cell cannot be erased.", true);
+                    Form1._Form1.SetText(@"This cell cannot be erased.");
                     return;
                 }
 
@@ -141,9 +115,8 @@ namespace SudokuMaster
                         }
 
                         // save the value in the array
-                        form.SetCell(col, row, value);
-
-                        form.SetStatus2($@"{value} erased at ({col},{row})", true);
+                        Form1._Form1.SetCell(col, row, value);
+                        Form1._Form1.SetText($@"{value} erased at ({col},{row})");
                     }
 
                     else
@@ -151,20 +124,22 @@ namespace SudokuMaster
                         // if move is not valid then return
                         if (!IsMoveValid(col, row, value))
                         {
-                            Form1._Form1.SetStatus2($@"Invalid move at ({col},{row})", true);
+                            Form1._Form1.SetText($@"Invalid move at ({col},{row})");
                             return;
                         }
 
-                        form.SetCell(col, row, value);
-                        form.SetStatus2($"Saved {value} to ({col},{row}) successfully.", true);
-                        UpdateNotes();
+                        Form1._Form1.SetCell(col, row, value);
+                        Form1._Form1.SetText($"Saved {value} to ({col},{row}) successfully.");
+
+
                         _log.Info($"Saved {value} to ({col},{row}) successfully.");
                         // save the value in the array
                         CellValues[col, row] = value;
 
                         // saves the move into the stack
-                        Moves.Push($"{label.Name}{value}");
+                        Moves.Push($"{label.Name} {col}{row} pushed onto Moves stack.");
 
+                        UpdateNotes();
 
                     }
                 }
@@ -204,48 +179,48 @@ namespace SudokuMaster
             CurrentGameState = sb.ToString();
         }
 
-        public bool IsPuzzleSolved()
-        {
-            string pattern;
+        //public bool IsPuzzleSolved()
+        //{
+        //    string pattern;
 
-            // check row by row
-            for (var r = 1; r <= 9; r++)
-            {
-                pattern = "123456789";
-                for (var c = 1; c <= 9; c++) pattern = pattern.Replace(CellValues[c, r].ToString(), string.Empty);
-                if (pattern.Length > 0)
-                {
-                    return false;
-                }
-            }
+        //    // check row by row
+        //    for (var r = 1; r <= 9; r++)
+        //    {
+        //        pattern = "123456789";
+        //        for (var c = 1; c <= 9; c++) pattern = pattern.Replace(CellValues[c, r].ToString(), string.Empty);
+        //        if (pattern.Length > 0)
+        //        {
+        //            return false;
+        //        }
+        //    }
 
-            // check col by col
-            for (var c = 1; c <= 9; c++)
-            {
-                pattern = "123456789";
-                for (var r = 1; r <= 9; r++) pattern = pattern.Replace(CellValues[c, r].ToString(), string.Empty);
-                if (pattern.Length > 0)
-                {
-                    return false;
-                }
-            }
+        //    // check col by col
+        //    for (var c = 1; c <= 9; c++)
+        //    {
+        //        pattern = "123456789";
+        //        for (var r = 1; r <= 9; r++) pattern = pattern.Replace(CellValues[c, r].ToString(), string.Empty);
+        //        if (pattern.Length > 0)
+        //        {
+        //            return false;
+        //        }
+        //    }
 
-            // check by minigrid
-            for (var c = 1; c <= 9; c += 3)
-            {
-                pattern = "123456789";
-                for (var r = 1; r <= 9; r += 3)
-                    for (var cc = 0; cc <= 2; cc++)
-                        for (var rr = 0; rr <= 2; rr++)
-                            pattern = pattern.Replace(CellValues[c + cc, r + rr].ToString(), string.Empty);
-                if (pattern.Length > 0)
-                {
-                    return false;
-                }
-            }
+        //    // check by minigrid
+        //    for (var c = 1; c <= 9; c += 3)
+        //    {
+        //        pattern = "123456789";
+        //        for (var r = 1; r <= 9; r += 3)
+        //            for (var cc = 0; cc <= 2; cc++)
+        //                for (var rr = 0; rr <= 2; rr++)
+        //                    pattern = pattern.Replace(CellValues[c + cc, r + rr].ToString(), string.Empty);
+        //        if (pattern.Length > 0)
+        //        {
+        //            return false;
+        //        }
+        //    }
 
-            return true;
-        }
+        //    return true;
+        //}
 
         public string CalculatePossibleValues(int col, int row)
         {
@@ -434,24 +409,23 @@ namespace SudokuMaster
 
         public void UpdateNotes()
         {
-            for (var r = 1; r <= 9; r++)
+            foreach (var r in Enumerable.Range(1, 9))
             {
-                for (var c = 1; c <= 9; c++)
+                foreach (var c in Enumerable.Range(1, 9))
                 {
-                    if (Cell[c, r] != 0)
-                    {
-                        continue;
-                    }
-
                     var control = Form1._Form1.Controls.Find($"{c}{r}", true).FirstOrDefault();
                     var label = (CustomLabel)control;
-                    if (label == null || !label.IsEraseable)
+
+                    if (CellValues[c, r] != 0 && label != null)
                     {
-                        continue;
+                        label.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
                     }
 
-                    label.Text = TransformPossibleValues(CalculatePossibleValues(c, r));
-                    _log.Info($"Saved {Cell[c, r]} to ({c},{r}) successfully.");
+                    if (CellValues[c, r] == 0 && label != null)
+                    {
+                        label.Font = new Font(SmallFontName, SmallFontSize, FontStyle.Bold);
+                        label.Text = TransformPossibleValues(CalculatePossibleValues(c, r));
+                    }
                 }
             }
 
@@ -537,6 +511,45 @@ namespace SudokuMaster
             }
 
             return isValid;
+        }
+
+        public bool IsPuzzleSolved(int col, int row, int value)
+        {
+
+            // scan through columns
+            foreach (var r in Enumerable.Range(1, 9))
+            {
+                if (CellValues[col, r] == value) // duplicate
+                {
+                    return false;
+                }
+            }
+
+            // scan through rows
+            foreach (var c in Enumerable.Range(1, 9))
+            {
+                if (CellValues[c, row] == value)
+                {
+                    return false;
+                }
+            }
+
+            // scan through regions
+            var startC = col - (col - 1) % 3;
+            var startR = row - (row - 1) % 3;
+
+            foreach (var rr in Enumerable.Range(0, 2))
+            {
+                foreach (var cc in Enumerable.Range(0, 2))
+                {
+                    if (CellValues[startC + cc, startR + rr] == value) // duplicate
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
 
         public string SaveGameToDisk(bool saveAs)
