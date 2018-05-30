@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -84,7 +85,7 @@ namespace SudokuMaster
         public void SudokuBoardHandler(object sender)
         {
             // check to see if game has started
-            if (Form1._Form1.GameStartTime > DateTime.Now)
+            if (!Form1._Form1.GameHasStarted)
             {
                 Form1._Form1.SetStatus(@"Click File->New to start a new game or File->Open to load an existing game", true);
                 return;
@@ -146,18 +147,18 @@ namespace SudokuMaster
                 catch (Exception ex)
                 {
                     MessageBox.Show(ex.Message);
-                }
-            }
 
-            if (IsPuzzleSolved())
-            {
-                Form1._Form1.SetStatus2(@"*****Puzzle Solved*****", true);
+                }
+                if (IsPuzzleSolved())
+                {
+                    Form1._Form1.SetStatus2(@"*****Puzzle Solved*****", true);
+                    Form1._Form1.timer1.Stop();
+                }
             }
         }
 
         public void UpdateCurrentGameState(int col, int row, int value)
         {
-            // do not use Counter here loops break out when they find the match
             var index = 0;
             var sb = new StringBuilder(CurrentGameState);
             foreach (var r in Enumerable.Range(1, 9))
@@ -179,48 +180,56 @@ namespace SudokuMaster
             CurrentGameState = sb.ToString();
         }
 
-        //public bool IsPuzzleSolved()
-        //{
-        //    string pattern;
+        public bool IsPuzzleSolved()
+        {
+            string pattern;
 
-        //    // check row by row
-        //    for (var r = 1; r <= 9; r++)
-        //    {
-        //        pattern = "123456789";
-        //        for (var c = 1; c <= 9; c++) pattern = pattern.Replace(CellValues[c, r].ToString(), string.Empty);
-        //        if (pattern.Length > 0)
-        //        {
-        //            return false;
-        //        }
-        //    }
+            // check row by row
+            for (var r = 1; r <= 9; r++)
+            {
+                pattern = "123456789";
+                for (var c = 1; c <= 9; c++)
+                {
+                    pattern = pattern.Replace(CellValues[c, r].ToString(), string.Empty);
+                }
 
-        //    // check col by col
-        //    for (var c = 1; c <= 9; c++)
-        //    {
-        //        pattern = "123456789";
-        //        for (var r = 1; r <= 9; r++) pattern = pattern.Replace(CellValues[c, r].ToString(), string.Empty);
-        //        if (pattern.Length > 0)
-        //        {
-        //            return false;
-        //        }
-        //    }
+                if (pattern.Length > 0)
+                {
+                    return false;
+                }
+            }
 
-        //    // check by minigrid
-        //    for (var c = 1; c <= 9; c += 3)
-        //    {
-        //        pattern = "123456789";
-        //        for (var r = 1; r <= 9; r += 3)
-        //            for (var cc = 0; cc <= 2; cc++)
-        //                for (var rr = 0; rr <= 2; rr++)
-        //                    pattern = pattern.Replace(CellValues[c + cc, r + rr].ToString(), string.Empty);
-        //        if (pattern.Length > 0)
-        //        {
-        //            return false;
-        //        }
-        //    }
+            // check col by col
+            for (var c = 1; c <= 9; c++)
+            {
+                pattern = "123456789";
+                for (var r = 1; r <= 9; r++)
+                {
+                    pattern = pattern.Replace(CellValues[c, r].ToString(), string.Empty);
+                }
 
-        //    return true;
-        //}
+                if (pattern.Length > 0)
+                {
+                    return false;
+                }
+            }
+
+            // check by minigrid
+            for (var c = 1; c <= 9; c += 3)
+            {
+                pattern = "123456789";
+                for (var r = 1; r <= 9; r += 3)
+                    for (var cc = 0; cc <= 2; cc++)
+                        for (var rr = 0; rr <= 2; rr++)
+                            pattern = pattern.Replace(CellValues[c + cc, r + rr].ToString(), string.Empty);
+                if (pattern.Length > 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         public string CalculatePossibleValues(int col, int row)
         {
@@ -511,45 +520,6 @@ namespace SudokuMaster
             }
 
             return isValid;
-        }
-
-        public bool IsPuzzleSolved(int col, int row, int value)
-        {
-
-            // scan through columns
-            foreach (var r in Enumerable.Range(1, 9))
-            {
-                if (CellValues[col, r] == value) // duplicate
-                {
-                    return false;
-                }
-            }
-
-            // scan through rows
-            foreach (var c in Enumerable.Range(1, 9))
-            {
-                if (CellValues[c, row] == value)
-                {
-                    return false;
-                }
-            }
-
-            // scan through regions
-            var startC = col - (col - 1) % 3;
-            var startR = row - (row - 1) % 3;
-
-            foreach (var rr in Enumerable.Range(0, 2))
-            {
-                foreach (var cc in Enumerable.Range(0, 2))
-                {
-                    if (CellValues[startC + cc, startR + rr] == value) // duplicate
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
         }
 
         public string SaveGameToDisk(bool saveAs)

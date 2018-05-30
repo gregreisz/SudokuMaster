@@ -50,7 +50,8 @@
             this.TxtActivities = new System.Windows.Forms.TextBox();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.BtnViewCandidates = new System.Windows.Forms.Button();
-            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+            this.BtnUpdateNotes = new System.Windows.Forms.Button();
+            this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.toolStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -175,6 +176,7 @@
             // timer1
             // 
             this.timer1.Interval = 1000;
+            this.timer1.Tick += new System.EventHandler(this.Timer1_Tick);
             // 
             // statusStrip1
             // 
@@ -182,7 +184,7 @@
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripStatusLabel1,
             this.toolStripStatusLabel2});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 428);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 458);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.statusStrip1.Size = new System.Drawing.Size(922, 22);
@@ -194,9 +196,9 @@
             this.toolStripStatusLabel1.ForeColor = System.Drawing.SystemColors.ControlText;
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
             this.toolStripStatusLabel1.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.toolStripStatusLabel1.Size = new System.Drawing.Size(453, 17);
+            this.toolStripStatusLabel1.Size = new System.Drawing.Size(438, 17);
             this.toolStripStatusLabel1.Spring = true;
-            this.toolStripStatusLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.toolStripStatusLabel1.TextAlign = System.Drawing.ContentAlignment.BottomLeft;
             // 
             // toolStripStatusLabel2
             // 
@@ -205,19 +207,20 @@
             this.toolStripStatusLabel2.LinkVisited = true;
             this.toolStripStatusLabel2.Name = "toolStripStatusLabel2";
             this.toolStripStatusLabel2.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.toolStripStatusLabel2.Size = new System.Drawing.Size(453, 17);
+            this.toolStripStatusLabel2.Size = new System.Drawing.Size(438, 17);
             this.toolStripStatusLabel2.Spring = true;
-            this.toolStripStatusLabel2.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            this.toolStripStatusLabel2.TextAlign = System.Drawing.ContentAlignment.BottomLeft;
             // 
             // BtnCheckValues
             // 
-            this.BtnCheckValues.Location = new System.Drawing.Point(605, 367);
+            this.BtnCheckValues.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.BtnCheckValues.Location = new System.Drawing.Point(598, 425);
             this.BtnCheckValues.Name = "BtnCheckValues";
             this.BtnCheckValues.Size = new System.Drawing.Size(142, 23);
             this.BtnCheckValues.TabIndex = 4;
             this.BtnCheckValues.Text = "&Check Values";
             this.BtnCheckValues.UseVisualStyleBackColor = false;
-            this.BtnCheckValues.Click += new System.EventHandler(this.BtnCheckValues_Click);
+            this.BtnCheckValues.Click += new System.EventHandler(this.BtnUpdateNotes_Click);
             // 
             // TxtActivities
             // 
@@ -226,8 +229,7 @@
             this.TxtActivities.Location = new System.Drawing.Point(315, 56);
             this.TxtActivities.Multiline = true;
             this.TxtActivities.Name = "TxtActivities";
-            this.TxtActivities.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.TxtActivities.Size = new System.Drawing.Size(598, 299);
+            this.TxtActivities.Size = new System.Drawing.Size(598, 300);
             this.TxtActivities.TabIndex = 0;
             // 
             // menuStrip1
@@ -240,13 +242,25 @@
             // 
             // BtnViewCandidates
             // 
-            this.BtnViewCandidates.Location = new System.Drawing.Point(764, 367);
+            this.BtnViewCandidates.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.BtnViewCandidates.Location = new System.Drawing.Point(768, 425);
             this.BtnViewCandidates.Name = "BtnViewCandidates";
             this.BtnViewCandidates.Size = new System.Drawing.Size(142, 23);
             this.BtnViewCandidates.TabIndex = 8;
             this.BtnViewCandidates.Text = "&View Current Candidates";
             this.BtnViewCandidates.UseVisualStyleBackColor = false;
-            this.BtnViewCandidates.Click += new System.EventHandler(this.BtnViewCandidates_Click);
+            this.BtnViewCandidates.Click += new System.EventHandler(this.BtnUpdateNotes_Click);
+            // 
+            // BtnUpdateNotes
+            // 
+            this.BtnUpdateNotes.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.BtnUpdateNotes.Location = new System.Drawing.Point(428, 425);
+            this.BtnUpdateNotes.Name = "BtnUpdateNotes";
+            this.BtnUpdateNotes.Size = new System.Drawing.Size(142, 23);
+            this.BtnUpdateNotes.TabIndex = 9;
+            this.BtnUpdateNotes.Text = "&Update Notes";
+            this.BtnUpdateNotes.UseVisualStyleBackColor = false;
+            this.BtnUpdateNotes.Click += new System.EventHandler(this.BtnUpdateNotes_Click);
             // 
             // Form1
             // 
@@ -255,14 +269,15 @@
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.CausesValidation = false;
-            this.ClientSize = new System.Drawing.Size(922, 450);
+            this.ClientSize = new System.Drawing.Size(922, 480);
+            this.Controls.Add(this.BtnUpdateNotes);
             this.Controls.Add(this.BtnViewCandidates);
             this.Controls.Add(this.TxtActivities);
             this.Controls.Add(this.BtnCheckValues);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.toolStrip1);
             this.Controls.Add(this.menuStrip1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
@@ -301,7 +316,8 @@
         public System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;
         private System.Windows.Forms.Button BtnViewCandidates;
-        private System.ComponentModel.BackgroundWorker backgroundWorker1;
+        private System.Windows.Forms.Button BtnUpdateNotes;
+        private System.Windows.Forms.Timer timer2;
     }
 }
 

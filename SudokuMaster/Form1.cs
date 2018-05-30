@@ -4,7 +4,9 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Threading;
+using System.Timers;
 using log4net.Config;
 
 namespace SudokuMaster
@@ -58,6 +60,7 @@ namespace SudokuMaster
             toolStripStatusLabel2.Text = value;
         }
 
+        // time that the game starts
         public DateTime StartTime { get; set; }
 
         public void SetLabel(int col, int row, string input)
@@ -69,13 +72,15 @@ namespace SudokuMaster
             label.Text = input;
         }
 
+
         public void SetText(string input)
         {
-            TxtActivities.Clear();
-            TxtActivities.AppendText(Environment.NewLine + input);
+            TxtActivities.AppendText(input + Environment.NewLine);
             TxtActivities.SelectionStart = TxtActivities.TextLength;
+            TxtActivities.SelectionStart = 0;
             TxtActivities.ScrollToCaret();
         }
+
 
         private readonly Sudoku _sudoku = new Sudoku();
 
@@ -87,43 +92,11 @@ namespace SudokuMaster
 
             XmlConfigurator.Configure();
 
-            backgroundWorker1.DoWork += BackgroundWorker1_DoWork;
-            backgroundWorker1.ProgressChanged += BackgroundWorker1_ProgressChanged;
-            backgroundWorker1.RunWorkerCompleted += BackgroundWorker1_RunWorkerCompleted;
-            backgroundWorker1.WorkerReportsProgress = backgroundWorker1.WorkerSupportsCancellation = true;
-            backgroundWorker1.RunWorkerAsync();
         }
 
-        private bool _cancel;
+        public bool GameHasStarted { get; set; }
 
-        private void BackgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            if (e.Error != null) MessageBox.Show(e.Error.ToString());
-            if (_cancel) Close();
-        }
-
-        protected override void OnFormClosing(FormClosingEventArgs e)
-        {
-            if (backgroundWorker1.IsBusy) _cancel = e.Cancel = true;
-            backgroundWorker1.CancelAsync();
-        }
-
-        private void BackgroundWorker1_ProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            SetStatus(e.UserState as string);
-        }
-
-        private void BackgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
-        {
-            while (!backgroundWorker1.CancellationPending)
-            {
-                var elapsed = DateTime.Now.Subtract(StartTime);
-
-                var etime = $"Time Elapsed {elapsed.Hours:00}:{elapsed.Minutes:00}:{elapsed.Seconds:00}";
-                backgroundWorker1.ReportProgress(0, etime);
-                Thread.Sleep(15);
-            }
-        }
+        public bool GameHasEnded { get; set; }
 
         private void BtnCheckValues_Click(object sender, EventArgs e)
         {
@@ -143,11 +116,6 @@ namespace SudokuMaster
         {
             _sudoku.SudokuBoardHandler(sender);
         }
-
-        //private void CheckColumnsAndRowsMenuItem_Click(object sender, EventArgs e)
-        //{
-        //    _sudoku.CheckColumnsAndRows();
-        //}
 
         private void CreateMainMenu()
         {
@@ -177,22 +145,6 @@ namespace SudokuMaster
             editItem.DropDownItems.Add(undoSubItem);
             editItem.DropDownItems.Add(redoSubItem);
 
-            //// create the Level menu
-            //var levelItem = new ToolStripMenuItem("&Level") {Name = "LevelMenuItem"};
-            //var easyToolStripMenuItem = new ToolStripMenuItem("&Easy") {Name = "EasyToolStripMenuItem"};
-            ////easyToolStripMenuItem.Click += EasyToolStripMenuItem_Click;
-            //var mediumToolStripMenuItem = new ToolStripMenuItem("&Medium") {Name = "MediumToolStripMenuItem"};
-            //mediumToolStripMenuItem.Click += MediumToolStripMenuItem_Click;
-            //var hardToolStripMenuItem = new ToolStripMenuItem("&Hard") {Name = "HardToolStripMenuItem"};
-            //hardToolStripMenuItem.Click += HardToolStripMenuItem_Click;
-            //var expertToolStripMenuItem = new ToolStripMenuItem("E&xpert") {Name = "ExpertToolStripMenuItem"};
-            //expertToolStripMenuItem.Click += ExpertToolStripMenuItem_Click;
-            //levelItem.DropDownItems.Add(easyToolStripMenuItem);
-            //levelItem.DropDownItems.Add(mediumToolStripMenuItem);
-            //levelItem.DropDownItems.Add(hardToolStripMenuItem);
-            //levelItem.DropDownItems.Add(expertToolStripMenuItem);
-
-            // create the Tools menu
             var toolsItem = new ToolStripMenuItem("&Tools");
             var CandidatesToolStripMenuItem = new ToolStripMenuItem("Check &Candidates");
             CandidatesToolStripMenuItem.Click += CandidatesToolStripMenuItem_Click;
@@ -210,67 +162,20 @@ namespace SudokuMaster
             menuStrip1.Items.Add(helpItem);
         }
 
-        //public void EasyToolStripMenuItem_Click(object sender, EventArgs e)
-        //{
-        //    var menuItem = (ToolStripMenuItem) sender;
-        //    if (menuItem == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(menuItem));
-        //    }
-
-        //    SetLevel(menuItem.Name);
-        //    SetMenuItemChecked(menuItem);
-        //}
-
-        private DateTime? _gameStartTime;
-
-        protected void OnPropertyChanged(PropertyChangedEventArgs e)
-        {
-            var handler = PropertyChanged;
-            handler?.Invoke(this, e);
-        }
-
-        protected void OnPropertyChanged(string propertyName)
-        {
-            OnPropertyChanged(new PropertyChangedEventArgs(propertyName));
-        }
-
-        public DateTime? GameStartTime
-        {
-            get { return _gameStartTime; }
-            set
-            {
-                if (value != _gameStartTime)
-                {
-                    _gameStartTime = value;
-                    OnPropertyChanged(nameof(GameStartTime));
-                    OnGameStartTimeChanged(EventArgs.Empty);
-                }
-            }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected void OnGameStartTimeChanged(EventArgs e)
-        {
-            var handler = GameStartTimeChanged;
-            handler?.Invoke(this, e);
-        }
-
-
-        public event EventHandler GameStartTimeChanged;
-
         public void StartNewGame()
         {
             Array.Clear(_sudoku.CellValues, 0, _sudoku.CellValues.Length);
             Array.Clear(_sudoku.Candidates, 0, _sudoku.Candidates.Length);
-            GameStartTime = DateTime.Now;
 
             // initialize the stacks
             _sudoku.Moves = new Stack<string>();
             _sudoku.RedoMoves = new Stack<string>();
 
-            SetStatus(@"New game started");
+            StartTime = DateTime.Now;
+            GameHasStarted = true;
+            timer1.Start();
+            SetStatus2(@"New game started");
+
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -292,13 +197,6 @@ namespace SudokuMaster
             AddLabelsToBoard();
 
         }
-
-        //public DateTime GameHasStarted_OnPropertyChanged()
-        //{
-        //    SetText($"{DateTime.Now}");
-
-        //    return DateTime.Now;
-        //}
 
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
@@ -327,81 +225,9 @@ namespace SudokuMaster
 
         public void ExitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            GetGameSaveInfo();
+            //GetGameSaveInfo();
             Application.Exit();
         }
-
-        //public void ExpertToolStripMenuItem_Click(object sender, EventArgs e)
-        //{
-        //    var menuItem = (ToolStripMenuItem) sender;
-        //    if (menuItem == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(menuItem));
-        //    }
-
-        //    SetLevel(menuItem.Name);
-        //    SetMenuItemChecked(menuItem);
-        //}
-
-        //public void SetMenuItemChecked(ToolStripMenuItem menuItem)
-        //{
-        //    foreach (ToolStripMenuItem item in menuStrip1.Items)
-        //    {
-        //        if (item.Name.Length == 0)
-        //        {
-        //            continue;
-        //        }
-
-        //        foreach (ToolStripMenuItem subItem in item.DropDownItems)
-        //            subItem.Checked = subItem.Name == menuItem.Name;
-        //    }
-        //}
-
-        //public void SetLevel(string menuItemName)
-        //{
-        //    switch (menuItemName)
-        //    {
-        //        case "EasyToolStripMenuItem":
-        //            Level = 1;
-        //            break;
-        //        case "MediumToolStripMenuItem":
-        //            Level = 2;
-        //            break;
-        //        case "HardToolStripMenuItem":
-        //            Level = 3;
-        //            break;
-        //        case "ExpertToolStripMenuItem":
-        //            Level = 4;
-        //            break;
-        //        default:
-        //            Level = 1;
-        //            break;
-        //    }
-        //}
-
-        //public void HardToolStripMenuItem_Click(object sender, EventArgs e)
-        //{
-        //    var menuItem = (ToolStripMenuItem) sender;
-        //    if (menuItem == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(menuItem));
-        //    }
-
-        //    SetLevel(menuItem.Name);
-        //    SetMenuItemChecked(menuItem);
-        //}
-
-        //public void MediumToolStripMenuItem_Click(object sender, EventArgs e)
-        //{
-        //    var menuItem = (ToolStripMenuItem) sender;
-        //    if (menuItem == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(menuItem));
-        //    }
-
-        //    SetLevel(menuItem.Name);
-        //    SetMenuItemChecked(menuItem);
-        //}
 
         public void OpenToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -416,9 +242,6 @@ namespace SudokuMaster
             var contents = _sudoku.LoadGameFromDisk();
 
             // set up the board with the saved game
-            // _sudoku.RefreshGameBoard();
-
-
             var counter = 0;
             foreach (var row in Enumerable.Range(1, 9))
             {
@@ -430,7 +253,6 @@ namespace SudokuMaster
                 }
             }
 
-            StartTime = DateTime.Now;
         }
 
         public void AddLabelsToBoard()
@@ -460,9 +282,9 @@ namespace SudokuMaster
                 }
         }
 
-        private bool GetGameSaveInfo()
+        private bool GetSaveGameResult()
         {
-            if (GameStartTime > DateTime.Now)
+            if (!GameHasStarted)
             {
                 return false;
             }
@@ -502,7 +324,7 @@ namespace SudokuMaster
 
         public void SaveAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (GameStartTime > DateTime.Now)
+            if (!GameHasStarted)
             {
                 Console.Beep();
                 SetStatus2(@"Game not started yet.");
@@ -514,7 +336,7 @@ namespace SudokuMaster
 
         public void SaveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (GameStartTime > DateTime.Now)
+            if (!GameHasStarted)
             {
                 SetStatus2(@"Game not started yet.");
                 return;
@@ -616,23 +438,26 @@ namespace SudokuMaster
             {
                 cellLabel.Value = value;
                 cellLabel.IsEraseable = false;
-                cellLabel.BackColor = Color.SteelBlue;
+                cellLabel.BackColor = Color.LightSteelBlue;
                 cellLabel.ForeColor = Color.Blue;
                 cellLabel.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
             }
-            //else if (value > 0 && cellLabel.IsEraseable)
-            //{
-            //    cellLabel.IsEraseable = true;
-            //    cellLabel.BackColor = Color.LightYellow;
-            //    cellLabel.ForeColor = Color.Black;
-            //    cellLabel.Font = new Font(labelLargeFontName, labelSizeLarge, FontStyle.Bold);
-            //}
 
             cellLabel.Text = value.ToString();
-            //if (value.ToString() == "0")
-            //{
-            //    cellLabel.ForeColor = cellLabel.BackColor;
-            //}
+        }
+
+        private void BtnUpdateNotes_Click(object sender, EventArgs e)
+        {
+            _sudoku.UpdateNotes();
+        }
+
+        private void Timer1_Tick(object sender, EventArgs e)
+        {
+            timer1.Enabled = true;
+            timer1.Start();
+
+            var eTime = DateTime.Now - StartTime;
+            SetStatus($@"Time Elapsed {eTime.Hours:00}:{eTime.Minutes:00}:{eTime.Seconds:00}");
         }
     }
 }
