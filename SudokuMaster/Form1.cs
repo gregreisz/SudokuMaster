@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Reflection;
 using System.Windows.Forms;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Threading;
-using System.Timers;
+using log4net;
 using log4net.Config;
 
 namespace SudokuMaster
@@ -46,7 +44,13 @@ namespace SudokuMaster
         // number the user selected from the toolStrip
         public int SelectedNumber { get; set; } = 1;
 
+        public string SavedFileName { get; set; }
+
+        public string CurrentGameState { get; set; }
+
         public static Form1 _Form1;
+
+        public ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public void SetStatus(string value, bool beep = false)
         {
@@ -98,18 +102,17 @@ namespace SudokuMaster
 
         public bool GameHasEnded { get; set; }
 
-        private void BtnCheckValues_Click(object sender, EventArgs e)
+        private void BtnClearTextBox_Click(object sender, EventArgs e)
         {
             TxtActivities.Clear();
-            _sudoku.CheckValues();
-            TxtActivities.SelectionStart = TxtActivities.TextLength;
+            TxtActivities.SelectionStart = 0;
             TxtActivities.ScrollToCaret();
 
         }
 
         public void CandidatesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            //_Sudoku.CheckCandidates();
+            _sudoku.CheckCandidates();
         }
 
         private void Cell_Click(object sender)
@@ -162,7 +165,8 @@ namespace SudokuMaster
             menuStrip1.Items.Add(helpItem);
         }
 
-        public void StartNewGame()
+
+        public void ClearBoard()
         {
             Array.Clear(_sudoku.CellValues, 0, _sudoku.CellValues.Length);
             Array.Clear(_sudoku.Candidates, 0, _sudoku.Candidates.Length);
@@ -171,10 +175,23 @@ namespace SudokuMaster
             _sudoku.Moves = new Stack<string>();
             _sudoku.RedoMoves = new Stack<string>();
 
+            // initialize the cells in the board
+            foreach (int row in Enumerable.Range(1, 9))
+            {
+                foreach (int col in Enumerable.Range(1, 9))
+                {
+                    SetCell(col, row, 0);
+                }
+            }
+        }
+
+        public void StartNewGame()
+        {
             StartTime = DateTime.Now;
             GameHasStarted = true;
+            CurrentGameState = string.Empty;
             timer1.Start();
-            SetStatus2(@"New game started");
+            //_log.Info(@"New game started");
 
         }
 
@@ -193,9 +210,8 @@ namespace SudokuMaster
             toolStripButton10.Click += ToolStripButton_Click;
 
             CreateMainMenu();
-
-            AddLabelsToBoard();
-
+            ClearBoard();
+            InitializeBoard();
         }
 
         private void Form1_Paint(object sender, PaintEventArgs e)
@@ -233,13 +249,16 @@ namespace SudokuMaster
         {
 
             // ask user if they want to save their current game to disk if any
-            //if (GetGameSaveInfo()) return;
+            // if (GetSaveGameResult()) return;
 
+            // initialize arrays
             StartNewGame();
 
+            ClearLabelValues();
 
-            // load the game from disk
-            var contents = _sudoku.LoadGameFromDisk();
+            // load the game from disk and reset CurrentGameState
+            var contents = CurrentGameState = _sudoku.LoadGameFromDisk();
+            _Form1.Text = SavedFileName;
 
             // set up the board with the saved game
             var counter = 0;
@@ -253,12 +272,12 @@ namespace SudokuMaster
                 }
             }
 
+            _sudoku.ShowNotes();
+
         }
 
-        public void AddLabelsToBoard()
+        public void InitializeBoard()
         {
-            SelectedNumber = 1;
-
             // used to store the location of the cell
             var location = new Point();
 
@@ -277,6 +296,7 @@ namespace SudokuMaster
                         Height = CellHeight,
                         TextAlign = ContentAlignment.MiddleCenter
                     };
+
                     label.Click += (sender, e) => Cell_Click(sender);
                     Controls.Add(label);
                 }
@@ -327,7 +347,7 @@ namespace SudokuMaster
             if (!GameHasStarted)
             {
                 Console.Beep();
-                SetStatus2(@"Game not started yet.");
+                SetStatus(@"Game not started yet.");
                 return;
             }
 
@@ -338,7 +358,7 @@ namespace SudokuMaster
         {
             if (!GameHasStarted)
             {
-                SetStatus2(@"Game not started yet.");
+                SetStatus(@"Game not started yet.");
                 return;
             }
 
@@ -384,12 +404,11 @@ namespace SudokuMaster
             int row = int.Parse(s[1].ToString());
 
             SetCell(col, row, 0);
-            SetStatus2($@"Value removed at ({col},{row}).");
+            SetStatus($@"Value removed at ({col},{row}).");
         }
 
         private void BtnViewCandidates_Click(object sender, EventArgs e)
         {
-            TxtActivities.Clear();
             _sudoku.CheckCandidates();
             TxtActivities.SelectionStart = TxtActivities.TextLength;
             TxtActivities.ScrollToCaret();
@@ -405,7 +424,9 @@ namespace SudokuMaster
 
             // save the value in the array
             _sudoku.CellValues[col, row] = value;
-
+            var counter1 = 0;
+            var counter2 = 0;
+            var counter3 = 0;
             // if erasing a cell, you need to reset the possible values for all cells
             if (value == 0)
             {
@@ -425,14 +446,17 @@ namespace SudokuMaster
                 _sudoku.Candidates[col, row] = value.ToString();
             }
 
-            // set the appearance for the CustomLabel control
-            if (value == 0 && cellLabel.Value == null) // erasing the cell
+            // set the properties for the label
+            if (value == 0 && cellLabel.Value == null)
             {
+
                 cellLabel.Value = value;
                 cellLabel.IsEraseable = true;
                 cellLabel.BackColor = Color.LightYellow;
                 cellLabel.ForeColor = Color.Black;
                 cellLabel.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
+                counter1++;
+                _log.Info($"Counter 1 = {counter1}{col},{row}({value} > 0 && {cellLabel.Value} != null)");
             }
             else if (value > 0 && cellLabel.Value == null)
             {
@@ -441,14 +465,38 @@ namespace SudokuMaster
                 cellLabel.BackColor = Color.LightSteelBlue;
                 cellLabel.ForeColor = Color.Blue;
                 cellLabel.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
+                counter2++;
+                _log.Info($"Counter 2 = {counter2}{col},{row}({value} > 0 && {cellLabel.Value} != null)");
             }
+            else if (value > 0 && cellLabel.IsEraseable)
+            {
+                cellLabel.Value = value;
+                cellLabel.BackColor = Color.LightYellow;
+                cellLabel.ForeColor = Color.Black;
+                cellLabel.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
+                counter3++;
+                _log.Info($"Counter 3 = {counter3}{col},{row}({value} > 0 && {cellLabel.Value} != null)");
+            }
+
 
             cellLabel.Text = value.ToString();
         }
 
-        private void BtnUpdateNotes_Click(object sender, EventArgs e)
+        private void ClearLabelValues()
         {
-            _sudoku.UpdateNotes();
+            foreach (var control in Controls)
+            {
+                if (control is CustomLabel label)
+                {
+                    label.Value = null;
+                }
+
+            }
+        }
+
+        private void BtnShowNotes_Click(object sender, EventArgs e)
+        {
+           _sudoku.ShowNotes();
         }
 
         private void Timer1_Tick(object sender, EventArgs e)
@@ -458,6 +506,16 @@ namespace SudokuMaster
 
             var eTime = DateTime.Now - StartTime;
             SetStatus($@"Time Elapsed {eTime.Hours:00}:{eTime.Minutes:00}:{eTime.Seconds:00}");
+        }
+
+        private void BtnCheckValues_Click(object sender, EventArgs e)
+        {
+            _sudoku.CheckValues();
+        }
+
+        private void TxtActivities_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
