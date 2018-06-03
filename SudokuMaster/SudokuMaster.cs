@@ -57,9 +57,6 @@ namespace SudokuMaster
         public const int LargeFontSize = 10;
 
 
-
-
-
         public string TransformPossibleValues(string possibleValues)
         {
             if (possibleValues.Length < 9) return possibleValues;
@@ -85,6 +82,10 @@ namespace SudokuMaster
                 : string.Empty;
         }
 
+        public bool IsNumeric(string input, out int number)
+        {
+            return int.TryParse(input, out number);
+        }
         public void SudokuBoardHandler(object sender)
         {
             var f = Form1._Form1;
@@ -101,6 +102,10 @@ namespace SudokuMaster
                 var col = SelectedColumn = int.Parse(label.Name.Substring(0, 1));
                 var row = SelectedRow = int.Parse(label.Name.Substring(1, 1));
                 var value = f.SelectedNumber;
+                if (FilterFileInput(label.Text).Trim().Length == 1 && IsNumeric(label.Text, out _))
+                {
+                    value = f.SelectedNumber = int.Parse(FilterFileInput(label.Text).Trim());
+                }
 
                 // if cell is not eraseable then return
                 if (label.IsEraseable == false)
@@ -164,6 +169,8 @@ namespace SudokuMaster
                 }
             }
         }
+
+    
 
         public bool IsPuzzleSolved()
         {
@@ -338,46 +345,6 @@ namespace SudokuMaster
             return changes;
         }
 
-        public void RefreshGameBoard()
-        {
-            var f = Form1._Form1;
-
-            var contents = f.CurrentGameState;
-
-            // set up the board with the current game state
-            Counter = 0;
-            var counter = 0;
-            foreach (var row in Enumerable.Range(1, 9))
-            {
-                foreach (var col in Enumerable.Range(1, 9))
-                {
-                    var value = int.Parse(contents[counter].ToString());
-                    counter++;
-                    f.SetCell(col, row, value);
-                }
-
-            }
-
-            foreach (var r in Enumerable.Range(1, 9))
-            {
-                foreach (var c in Enumerable.Range(1, 9))
-                {
-                    if (CellValues[c, r] != 0)
-                    {
-                        continue;
-                    }
-
-                    var control = f.Controls.Find($"{c}{r}", true).FirstOrDefault();
-                    var label = (Label)control;
-                    if (label != null)
-                    {
-                        label.Text = TransformPossibleValues(CalculatePossibleValues(c, r));
-                    }
-                }
-            }
-
-        }
-
         public void ShowNotes()
         {
             var f = Form1._Form1;
@@ -433,12 +400,14 @@ namespace SudokuMaster
             {
                 // scan through columns
                 foreach (var r in Enumerable.Range(1, 9))
+                {
                     if (CellValues[col, r] == value) // duplicate
                     {
                         Form1._Form1.SetStatus($"Move to {col},{r} found to be invalid while scanning columns.", true);
                         isValid = false;
 
                     }
+                }
             }
             catch (Exception ex)
             {
@@ -449,12 +418,14 @@ namespace SudokuMaster
             {
                 // scan through rows
                 foreach (var c in Enumerable.Range(1, 9))
-                    if (CellValues[c, row] == value)
+                {
+                    if (CellValues != null && CellValues[c, row] == value)
                     {
                         Form1._Form1.SetStatus($"Move to {c},{row} found to be invalid while scanning rows.", true);
 
                         isValid = false;
                     }
+                }
             }
             catch (Exception ex)
             {
@@ -468,12 +439,14 @@ namespace SudokuMaster
                 var startR = row - (row - 1) % 3;
 
                 foreach (var rr in Enumerable.Range(0, 2))
+                {
                     foreach (var cc in Enumerable.Range(0, 2))
-                        if (CellValues[startC + cc, startR + rr] == value) // duplicate
+                        if (CellValues != null && CellValues[startC + cc, startR + rr] == value) // duplicate
                         {
                             Form1._Form1.SetStatus($"Move to {startC + cc},{startR + rr} found to be invalid while scanning boxes.", true);
                             isValid = false;
                         }
+                }
             }
             catch (Exception ex)
             {

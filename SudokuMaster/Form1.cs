@@ -76,7 +76,6 @@ namespace SudokuMaster
             label.Text = input;
         }
 
-
         public void SetText(string input)
         {
             TxtActivities.AppendText(input + Environment.NewLine);
@@ -84,7 +83,6 @@ namespace SudokuMaster
             TxtActivities.SelectionStart = 0;
             TxtActivities.ScrollToCaret();
         }
-
 
         private readonly Sudoku _sudoku = new Sudoku();
 
@@ -164,7 +162,6 @@ namespace SudokuMaster
             menuStrip1.Items.Add(toolsItem);
             menuStrip1.Items.Add(helpItem);
         }
-
 
         public void ClearBoard()
         {
@@ -415,7 +412,6 @@ namespace SudokuMaster
 
         }
 
-
         public void SetCell(int col, int row, int value)
         {
             var control = Controls.Find($"{col}{row}", true).FirstOrDefault();
@@ -496,7 +492,7 @@ namespace SudokuMaster
 
         private void BtnShowNotes_Click(object sender, EventArgs e)
         {
-           _sudoku.ShowNotes();
+            _sudoku.ShowNotes();
         }
 
         private void Timer1_Tick(object sender, EventArgs e)
