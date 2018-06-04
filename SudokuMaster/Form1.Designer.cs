@@ -29,7 +29,6 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
@@ -50,7 +49,6 @@
             this.TxtActivities = new System.Windows.Forms.TextBox();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.BtnViewCandidatesByRow = new System.Windows.Forms.Button();
-            this.BtnUpdateNotes = new System.Windows.Forms.Button();
             this.BtnCheckValues = new System.Windows.Forms.Button();
             this.toolStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
@@ -58,6 +56,7 @@
             // 
             // toolStrip1
             // 
+            this.toolStrip1.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripLabel1,
             this.toolStripButton1,
@@ -72,6 +71,7 @@
             this.toolStripButton10});
             this.toolStrip1.Location = new System.Drawing.Point(0, 24);
             this.toolStrip1.Name = "toolStrip1";
+            this.toolStrip1.ShowItemToolTips = false;
             this.toolStrip1.Size = new System.Drawing.Size(922, 25);
             this.toolStrip1.TabIndex = 0;
             this.toolStrip1.Text = "toolStrip1";
@@ -233,7 +233,6 @@
             this.TxtActivities.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.TxtActivities.Size = new System.Drawing.Size(598, 300);
             this.TxtActivities.TabIndex = 0;
-            this.TxtActivities.TextChanged += new System.EventHandler(this.TxtActivities_TextChanged);
             // 
             // menuStrip1
             // 
@@ -253,17 +252,6 @@
             this.BtnViewCandidatesByRow.Text = "View &Candidates";
             this.BtnViewCandidatesByRow.UseVisualStyleBackColor = false;
             this.BtnViewCandidatesByRow.Click += new System.EventHandler(this.BtnViewCandidates_Click);
-            // 
-            // BtnUpdateNotes
-            // 
-            this.BtnUpdateNotes.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.BtnUpdateNotes.Location = new System.Drawing.Point(339, 362);
-            this.BtnUpdateNotes.Name = "BtnUpdateNotes";
-            this.BtnUpdateNotes.Size = new System.Drawing.Size(104, 23);
-            this.BtnUpdateNotes.TabIndex = 9;
-            this.BtnUpdateNotes.Text = "Show &Mark-ups";
-            this.BtnUpdateNotes.UseVisualStyleBackColor = false;
-            this.BtnUpdateNotes.Click += new System.EventHandler(this.BtnShowNotes_Click);
             // 
             // BtnCheckValues
             // 
@@ -285,17 +273,20 @@
             this.CausesValidation = false;
             this.ClientSize = new System.Drawing.Size(922, 480);
             this.Controls.Add(this.BtnCheckValues);
-            this.Controls.Add(this.BtnUpdateNotes);
             this.Controls.Add(this.BtnViewCandidatesByRow);
             this.Controls.Add(this.TxtActivities);
             this.Controls.Add(this.BtnClearTextBox);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.toolStrip1);
             this.Controls.Add(this.menuStrip1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
+            this.HelpButton = true;
             this.MainMenuStrip = this.menuStrip1;
+            this.MaximizeBox = false;
+            this.MaximumSize = new System.Drawing.Size(938, 519);
+            this.MinimizeBox = false;
+            this.MinimumSize = new System.Drawing.Size(938, 519);
             this.Name = "Form1";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Sudoku Master";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.Form1_Paint);
@@ -309,14 +300,12 @@
         }
 
         #endregion
-
-        public System.Windows.Forms.ToolTip toolTip1;
-        public System.Windows.Forms.ToolStrip toolStrip1;
-        public System.Windows.Forms.ToolStripButton toolStripButton1;
-        public System.Windows.Forms.Timer timer1;
+        private System.Windows.Forms.ToolStrip toolStrip1;
+        private System.Windows.Forms.ToolStripButton toolStripButton1;
+        private System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.StatusStrip statusStrip1;
-        public System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
-        public System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel2;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel2;
         private System.Windows.Forms.ToolStripButton toolStripButton2;
         private System.Windows.Forms.ToolStripButton toolStripButton10;
         private System.Windows.Forms.ToolStripButton toolStripButton9;
@@ -326,12 +315,11 @@
         private System.Windows.Forms.ToolStripButton toolStripButton5;
         private System.Windows.Forms.ToolStripButton toolStripButton4;
         private System.Windows.Forms.ToolStripButton toolStripButton3;
-        public System.Windows.Forms.TextBox TxtActivities;
-        public System.Windows.Forms.MenuStrip menuStrip1;
+        private System.Windows.Forms.TextBox TxtActivities;
+        private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;
         private System.Windows.Forms.Button BtnViewCandidatesByRow;
-        private System.Windows.Forms.Button BtnUpdateNotes;
-        public System.Windows.Forms.Button BtnClearTextBox;
+        private System.Windows.Forms.Button BtnClearTextBox;
         private System.Windows.Forms.Button BtnCheckValues;
     }
 }

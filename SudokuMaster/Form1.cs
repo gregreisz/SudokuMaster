@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Reflection;
@@ -20,6 +21,8 @@ namespace SudokuMaster
 
         void SetLabel(int col, int row, string input);
 
+        void StartTimer(bool start);
+
     }
 
     public partial class Form1 : Form, IForm1
@@ -29,16 +32,13 @@ namespace SudokuMaster
         //private int Level { get; set; } = 1; 
         #endregion
 
-        private const string saveGame = "Do you want to save current game?";
-        private const string saveCurrentGame = "Save current game?";
         public const string LargeFontName = "Verdana";
-        public const string SmallFontName = "Consolas";
-        public const int SmallFontSize = 6;
         public const int LargeFontSize = 10;
         private const int CellHeight = 32;
         private const int CellWidth = 32;
         private const int XOffset = -20;
         private const int YOffset = 25;
+        private const string LinkData = @"http://www.sudokuessentials.com/support-files/blank-sudoku-grid-candidates.pdf";
 
 
         // number the user selected from the toolStrip
@@ -51,6 +51,17 @@ namespace SudokuMaster
         public static Form1 _Form1;
 
         public ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        public void StartTimer(bool start)
+        {
+            if (start)
+            {
+                timer1.Start();
+                return;
+            }
+
+            timer1.Stop();
+        }
 
         public void SetStatus(string value, bool beep = false)
         {
@@ -188,7 +199,8 @@ namespace SudokuMaster
             GameHasStarted = true;
             CurrentGameState = string.Empty;
             timer1.Start();
-            //_log.Info(@"New game started");
+            SetStatus2(@"New game started");
+            _log.Info(@"New game started");
 
         }
 
@@ -209,6 +221,42 @@ namespace SudokuMaster
             CreateMainMenu();
             ClearBoard();
             InitializeBoard();
+
+            AddLinkLabel();
+        }
+
+        private void AddLinkLabel()
+        {
+            var linkLabel = new LinkLabel
+            {
+                Name = "linkLabel1",
+                Text = @"Download blank-sudoku-grid-candidates.pdf",
+                Font = new Font("Verdana", 9),
+                Location = new Point(325, 25),
+                Size = new Size(560, 23),
+                BorderStyle = BorderStyle.None,
+                LinkVisited = false,
+                TextAlign = ContentAlignment.MiddleRight,
+                FlatStyle = FlatStyle.Flat,
+                LinkBehavior = LinkBehavior.NeverUnderline
+
+            };
+
+            linkLabel.Links.Add(0, linkLabel.Text.Length, LinkData);
+            linkLabel.LinkClicked += LinkLabel1_LinkClicked;
+
+            Controls.Add(linkLabel);
+            linkLabel.BringToFront();
+        }
+
+        private static void LinkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            if (sender is LinkLabel linkLabel1)
+            {
+                linkLabel1.LinkVisited = false;
+            }
+
+            Process.Start(LinkData);
         }
 
         private void Form1_Paint(object sender, PaintEventArgs e)
@@ -269,7 +317,7 @@ namespace SudokuMaster
                 }
             }
 
-            _sudoku.ShowNotes();
+            _sudoku.ShowMarkups();
 
         }
 
@@ -297,28 +345,6 @@ namespace SudokuMaster
                     label.Click += (sender, e) => Cell_Click(sender);
                     Controls.Add(label);
                 }
-        }
-
-        private bool GetSaveGameResult()
-        {
-            if (!GameHasStarted)
-            {
-                return false;
-            }
-
-            var response = MessageBox.Show(saveGame, saveCurrentGame, MessageBoxButtons.YesNoCancel,
-                MessageBoxIcon.Question);
-
-            if (response == DialogResult.Yes)
-            {
-                _sudoku.SaveGameToDisk(false);
-            }
-            else if (response == DialogResult.Cancel)
-            {
-                return true;
-            }
-
-            return false;
         }
 
         public void RedoToolStripMenuItem_Click(object sender, EventArgs e)
@@ -490,11 +516,6 @@ namespace SudokuMaster
             }
         }
 
-        private void BtnShowNotes_Click(object sender, EventArgs e)
-        {
-            _sudoku.ShowNotes();
-        }
-
         private void Timer1_Tick(object sender, EventArgs e)
         {
             timer1.Enabled = true;
@@ -509,9 +530,5 @@ namespace SudokuMaster
             _sudoku.CheckValues();
         }
 
-        private void TxtActivities_TextChanged(object sender, EventArgs e)
-        {
-
-        }
     }
 }

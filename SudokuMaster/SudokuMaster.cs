@@ -71,10 +71,6 @@ namespace SudokuMaster
 
         public int SelectedRow { get; set; } = 1;
 
-        public int CountOfClues { get; set; }
-
-        public int Counter { get; set; }
-
         public string FilterFileInput(string input)
         {
             return !string.IsNullOrEmpty(input)
@@ -149,7 +145,7 @@ namespace SudokuMaster
                         // saves the move into the stack
                         Moves.Push($"{label.Name} {col}{row} pushed onto Moves stack.");
 
-                        ShowNotes();
+                        ShowMarkups();
 
                     }
                 }
@@ -160,17 +156,13 @@ namespace SudokuMaster
                 }
                 if (IsPuzzleSolved())
                 {
-                    f.SetStatus2(@"*****Puzzle Solved*****", true);
-                    f.SetStatus2(@"*****Game Ended*****");
-
-                    f.timer1.Stop();
+                    f.SetStatus2(@"*****Puzzle Solved*****Game Ended*****", true);
+                    f.StartTimer(true);
                     f.GameHasEnded = true;
 
                 }
             }
         }
-
-    
 
         public bool IsPuzzleSolved()
         {
@@ -240,11 +232,13 @@ namespace SudokuMaster
 
             // Step (2) check by row
             for (c = 1; c <= 9; c++)
+            {
                 if (CellValues[c, row] != 0)
                 {
                     // that means there is a actual value in it
                     str = str.Replace(CellValues[c, row].ToString(), space);
                 }
+            }
 
             // Step (3) check within the minigrid
             var startC = col - (col - 1) % 3;
@@ -307,45 +301,7 @@ namespace SudokuMaster
             Form1._Form1.SetText(sb.ToString());
         }
 
-        public bool CheckColumnsAndRows()
-        {
-            var changes = false;
-
-            // check all cells
-            foreach (var row in Enumerable.Range(1, 9))
-                foreach (var col in Enumerable.Range(1, 9))
-                {
-                    if (CellValues[col, row] != 0)
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        Candidates[col, row] = CalculatePossibleValues(col, row);
-                    }
-                    catch (Exception)
-                    {
-                        throw new Exception("Invalid Move");
-                    }
-
-                    if (Candidates[col, row].Length != 1)
-                    {
-                        continue;
-                    }
-
-                    // number is confirmed
-                    CellValues[col, row] = int.Parse(Candidates[col, row]);
-                    changes = true;
-
-                    // accumulate the total score
-                }
-
-            CheckValues();
-            return changes;
-        }
-
-        public void ShowNotes()
+        public void ShowMarkups()
         {
             var f = Form1._Form1;
 
