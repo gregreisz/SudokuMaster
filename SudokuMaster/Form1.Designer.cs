@@ -46,16 +46,20 @@
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabel2 = new System.Windows.Forms.ToolStripStatusLabel();
             this.BtnClearTextBox = new System.Windows.Forms.Button();
-            this.TxtActivities = new System.Windows.Forms.TextBox();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.BtnViewCandidatesByRow = new System.Windows.Forms.Button();
-            this.BtnCheckValues = new System.Windows.Forms.Button();
+            this.ButtonViewMarkups = new System.Windows.Forms.Button();
+            this.printDialog1 = new System.Windows.Forms.PrintDialog();
+            this.printDocument1 = new System.Drawing.Printing.PrintDocument();
+            this.ButtonPrintText = new System.Windows.Forms.Button();
+            this.RichTextBox1 = new System.Windows.Forms.RichTextBox();
             this.toolStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // toolStrip1
             // 
+            this.toolStrip1.BackColor = System.Drawing.Color.Transparent;
             this.toolStrip1.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripLabel1,
@@ -215,27 +219,17 @@
             // BtnClearTextBox
             // 
             this.BtnClearTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.BtnClearTextBox.Location = new System.Drawing.Point(790, 362);
+            this.BtnClearTextBox.Location = new System.Drawing.Point(728, 362);
             this.BtnClearTextBox.Name = "BtnClearTextBox";
             this.BtnClearTextBox.Size = new System.Drawing.Size(95, 23);
             this.BtnClearTextBox.TabIndex = 4;
-            this.BtnClearTextBox.Text = "Clear &TextBox";
+            this.BtnClearTextBox.Text = "&Clear Text";
             this.BtnClearTextBox.UseVisualStyleBackColor = false;
             this.BtnClearTextBox.Click += new System.EventHandler(this.BtnClearTextBox_Click);
             // 
-            // TxtActivities
-            // 
-            this.TxtActivities.AcceptsTab = true;
-            this.TxtActivities.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.TxtActivities.Location = new System.Drawing.Point(315, 56);
-            this.TxtActivities.Multiline = true;
-            this.TxtActivities.Name = "TxtActivities";
-            this.TxtActivities.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.TxtActivities.Size = new System.Drawing.Size(598, 300);
-            this.TxtActivities.TabIndex = 0;
-            // 
             // menuStrip1
             // 
+            this.menuStrip1.BackColor = System.Drawing.Color.Transparent;
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(922, 24);
@@ -245,24 +239,47 @@
             // BtnViewCandidatesByRow
             // 
             this.BtnViewCandidatesByRow.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.BtnViewCandidatesByRow.Location = new System.Drawing.Point(485, 362);
+            this.BtnViewCandidatesByRow.Location = new System.Drawing.Point(317, 362);
             this.BtnViewCandidatesByRow.Name = "BtnViewCandidatesByRow";
             this.BtnViewCandidatesByRow.Size = new System.Drawing.Size(114, 23);
             this.BtnViewCandidatesByRow.TabIndex = 8;
-            this.BtnViewCandidatesByRow.Text = "View &Candidates";
+            this.BtnViewCandidatesByRow.Text = "View Can&didates";
             this.BtnViewCandidatesByRow.UseVisualStyleBackColor = false;
             this.BtnViewCandidatesByRow.Click += new System.EventHandler(this.BtnViewCandidates_Click);
             // 
-            // BtnCheckValues
+            // ButtonViewMarkups
             // 
-            this.BtnCheckValues.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.BtnCheckValues.Location = new System.Drawing.Point(641, 362);
-            this.BtnCheckValues.Name = "BtnCheckValues";
-            this.BtnCheckValues.Size = new System.Drawing.Size(107, 23);
-            this.BtnCheckValues.TabIndex = 10;
-            this.BtnCheckValues.Text = "Check &Values";
-            this.BtnCheckValues.UseVisualStyleBackColor = false;
-            this.BtnCheckValues.Click += new System.EventHandler(this.BtnCheckValues_Click);
+            this.ButtonViewMarkups.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.ButtonViewMarkups.Location = new System.Drawing.Point(437, 362);
+            this.ButtonViewMarkups.Name = "ButtonViewMarkups";
+            this.ButtonViewMarkups.Size = new System.Drawing.Size(107, 23);
+            this.ButtonViewMarkups.TabIndex = 10;
+            this.ButtonViewMarkups.Text = "View &Markups";
+            this.ButtonViewMarkups.UseVisualStyleBackColor = false;
+            this.ButtonViewMarkups.Click += new System.EventHandler(this.ButtonViewMarkups_Click);
+            // 
+            // printDialog1
+            // 
+            this.printDialog1.UseEXDialog = true;
+            // 
+            // ButtonPrintText
+            // 
+            this.ButtonPrintText.Location = new System.Drawing.Point(837, 361);
+            this.ButtonPrintText.Name = "ButtonPrintText";
+            this.ButtonPrintText.Size = new System.Drawing.Size(75, 23);
+            this.ButtonPrintText.TabIndex = 11;
+            this.ButtonPrintText.Text = "&Print Text";
+            this.ButtonPrintText.UseVisualStyleBackColor = true;
+            this.ButtonPrintText.Click += new System.EventHandler(this.ButtonPrintText_Click);
+            // 
+            // RichTextBox1
+            // 
+            this.RichTextBox1.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.RichTextBox1.Location = new System.Drawing.Point(317, 56);
+            this.RichTextBox1.Name = "RichTextBox1";
+            this.RichTextBox1.Size = new System.Drawing.Size(595, 300);
+            this.RichTextBox1.TabIndex = 12;
+            this.RichTextBox1.Text = "";
             // 
             // Form1
             // 
@@ -272,9 +289,10 @@
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.CausesValidation = false;
             this.ClientSize = new System.Drawing.Size(922, 480);
-            this.Controls.Add(this.BtnCheckValues);
+            this.Controls.Add(this.RichTextBox1);
+            this.Controls.Add(this.ButtonPrintText);
+            this.Controls.Add(this.ButtonViewMarkups);
             this.Controls.Add(this.BtnViewCandidatesByRow);
-            this.Controls.Add(this.TxtActivities);
             this.Controls.Add(this.BtnClearTextBox);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.toolStrip1);
@@ -315,12 +333,15 @@
         private System.Windows.Forms.ToolStripButton toolStripButton5;
         private System.Windows.Forms.ToolStripButton toolStripButton4;
         private System.Windows.Forms.ToolStripButton toolStripButton3;
-        private System.Windows.Forms.TextBox TxtActivities;
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;
         private System.Windows.Forms.Button BtnViewCandidatesByRow;
         private System.Windows.Forms.Button BtnClearTextBox;
-        private System.Windows.Forms.Button BtnCheckValues;
+        private System.Windows.Forms.Button ButtonViewMarkups;
+        private System.Windows.Forms.PrintDialog printDialog1;
+        private System.Drawing.Printing.PrintDocument printDocument1;
+        private System.Windows.Forms.Button ButtonPrintText;
+        public System.Windows.Forms.RichTextBox RichTextBox1;
     }
 }
 

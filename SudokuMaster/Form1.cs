@@ -1,7 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Printing;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
@@ -19,48 +20,45 @@ namespace SudokuMaster
 
         void SetStatus2(string value, bool beep);
 
-        void SetLabel(int col, int row, string input);
+        void StartTimer();
 
-        void StartTimer(bool start);
+        void StopTimer();
 
     }
 
     public partial class Form1 : Form, IForm1
     {
-
-        #region
-        //private int Level { get; set; } = 1; 
-        #endregion
-
-        public const string LargeFontName = "Verdana";
-        public const int LargeFontSize = 10;
         private const int CellHeight = 32;
         private const int CellWidth = 32;
         private const int XOffset = -20;
         private const int YOffset = 25;
         private const string LinkData = @"http://www.sudokuessentials.com/support-files/blank-sudoku-grid-candidates.pdf";
+        private const string LinkData2 = @"C:\Users\greg\Documents\Projects\SudokuMaster\SudokuMaster\Sudoku Games\how-to-solve-sudoku-puzzle.pdf";
 
+        private int linesPrinted;
+        private string[] _lines;
+
+        private readonly Sudoku _sudoku = new Sudoku();
 
         // number the user selected from the toolStrip
         public int SelectedNumber { get; set; } = 1;
 
-        public string SavedFileName { get; set; }
-
-        public string CurrentGameState { get; set; }
-
         public static Form1 _Form1;
 
-        public ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public void StartTimer(bool start)
+        public void StartTimer()
         {
-            if (start)
-            {
-                timer1.Start();
-                return;
-            }
+            timer1.Start();
+            var time = DateTime.Now.ToString(CultureInfo.InvariantCulture);
+            _log.Info($"{nameof(timer1)} started at {time}");
+        }
 
+        public void StopTimer()
+        {
             timer1.Stop();
+            var time = DateTime.Now.ToString(CultureInfo.InvariantCulture);
+            _log.Info($"{nameof(timer1)} stopped at {time}");
         }
 
         public void SetStatus(string value, bool beep = false)
@@ -75,27 +73,17 @@ namespace SudokuMaster
             toolStripStatusLabel2.Text = value;
         }
 
+
         // time that the game starts
         public DateTime StartTime { get; set; }
 
-        public void SetLabel(int col, int row, string input)
-        {
-            // find the CustomLabel control
-            var control = Controls.Find($"{col}{row}", true).FirstOrDefault();
-            if (!(control is CustomLabel label)) return;
-            label.Font = new Font(LargeFontName, 10, label.Font.Style | FontStyle.Bold);
-            label.Text = input;
-        }
-
         public void SetText(string input)
         {
-            TxtActivities.AppendText(input + Environment.NewLine);
-            TxtActivities.SelectionStart = TxtActivities.TextLength;
-            TxtActivities.SelectionStart = 0;
-            TxtActivities.ScrollToCaret();
+            RichTextBox1.AppendText(input + Environment.NewLine);
+            RichTextBox1.SelectionStart = RichTextBox1.TextLength;
+            RichTextBox1.SelectionStart = 0;
+            RichTextBox1.ScrollToCaret();
         }
-
-        private readonly Sudoku _sudoku = new Sudoku();
 
         public Form1()
         {
@@ -107,26 +95,22 @@ namespace SudokuMaster
 
         }
 
-        public bool GameHasStarted { get; set; }
-
-        public bool GameHasEnded { get; set; }
-
         private void BtnClearTextBox_Click(object sender, EventArgs e)
         {
-            TxtActivities.Clear();
-            TxtActivities.SelectionStart = 0;
-            TxtActivities.ScrollToCaret();
+            RichTextBox1.Clear();
+            RichTextBox1.SelectionStart = 0;
+            RichTextBox1.ScrollToCaret();
 
         }
 
-        public void CandidatesToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CandidatesToolStripMenuItem_Click(object sender, EventArgs e)
         {
             _sudoku.CheckCandidates();
         }
 
         private void Cell_Click(object sender)
         {
-            _sudoku.SudokuBoardHandler(sender);
+            _sudoku.SudokuHandler(sender);
         }
 
         private void CreateMainMenu()
@@ -174,36 +158,6 @@ namespace SudokuMaster
             menuStrip1.Items.Add(helpItem);
         }
 
-        public void ClearBoard()
-        {
-            Array.Clear(_sudoku.CellValues, 0, _sudoku.CellValues.Length);
-            Array.Clear(_sudoku.Candidates, 0, _sudoku.Candidates.Length);
-
-            // initialize the stacks
-            _sudoku.Moves = new Stack<string>();
-            _sudoku.RedoMoves = new Stack<string>();
-
-            // initialize the cells in the board
-            foreach (int row in Enumerable.Range(1, 9))
-            {
-                foreach (int col in Enumerable.Range(1, 9))
-                {
-                    SetCell(col, row, 0);
-                }
-            }
-        }
-
-        public void StartNewGame()
-        {
-            StartTime = DateTime.Now;
-            GameHasStarted = true;
-            CurrentGameState = string.Empty;
-            timer1.Start();
-            SetStatus2(@"New game started");
-            _log.Info(@"New game started");
-
-        }
-
         private void Form1_Load(object sender, EventArgs e)
         {
             toolStripButton1.Click += ToolStripButton_Click;
@@ -218,12 +172,50 @@ namespace SudokuMaster
             toolStripButton9.Click += ToolStripButton_Click;
             toolStripButton10.Click += ToolStripButton_Click;
 
+            printDocument1.PrintPage += PrintDocument1_BeginPrint;
+            printDocument1.PrintPage += PrintDocument1_PrintPage;
+
             CreateMainMenu();
-            ClearBoard();
+            _sudoku.ClearBoard();
             InitializeBoard();
 
             AddLinkLabel();
+            AddLinkLabel2();
         }
+
+        private void PrintDocument1_BeginPrint(object sender, EventArgs e)
+        {
+            char[] param = { '\n' };
+            _lines = printDialog1.PrinterSettings.PrintRange == PrintRange.Selection ? RichTextBox1.SelectedText.Split(param) : RichTextBox1.Text.Split(param);
+
+            int i = 0;
+            char[] trimParam = { '\r' };
+            foreach (string s in _lines)
+            {
+                _lines[i++] = s.TrimEnd(trimParam);
+            }
+
+        }
+
+
+        private void PrintDocument1_PrintPage(object sender, PrintPageEventArgs e)
+        {
+            int x = e.MarginBounds.Left;
+            int y = e.MarginBounds.Top;
+            Brush brush = new SolidBrush(RichTextBox1.ForeColor);
+
+            while (linesPrinted < _lines.Length)
+            {
+                e.Graphics.DrawString(_lines[linesPrinted++], RichTextBox1.Font, brush, x, y);
+                y += 15;
+                if (y >= e.MarginBounds.Bottom)
+                {
+                    e.HasMorePages = true;
+                    return;
+                }
+            }
+        }
+
 
         private void AddLinkLabel()
         {
@@ -232,18 +224,43 @@ namespace SudokuMaster
                 Name = "linkLabel1",
                 Text = @"Download blank-sudoku-grid-candidates.pdf",
                 Font = new Font("Verdana", 9),
-                Location = new Point(325, 25),
+                Location = new Point(325, 6),
                 Size = new Size(560, 23),
                 BorderStyle = BorderStyle.None,
                 LinkVisited = false,
-                TextAlign = ContentAlignment.MiddleRight,
+                TextAlign = ContentAlignment.MiddleLeft,
                 FlatStyle = FlatStyle.Flat,
-                LinkBehavior = LinkBehavior.NeverUnderline
+                LinkBehavior = LinkBehavior.NeverUnderline,
+                BackColor = Color.Transparent
 
             };
 
             linkLabel.Links.Add(0, linkLabel.Text.Length, LinkData);
             linkLabel.LinkClicked += LinkLabel1_LinkClicked;
+
+            Controls.Add(linkLabel);
+            linkLabel.BringToFront();
+        }
+
+        private void AddLinkLabel2()
+        {
+            var linkLabel = new LinkLabel
+            {
+                Name = @"linkLabel2",
+                Text = @"How to solve sudoku puzzles",
+                Font = new Font("Verdana", 9),
+                Location = new Point(325, 29),
+                Size = new Size(560, 23),
+                BorderStyle = BorderStyle.None,
+                LinkVisited = false,
+                TextAlign = ContentAlignment.MiddleLeft,
+                FlatStyle = FlatStyle.Flat,
+                LinkBehavior = LinkBehavior.NeverUnderline,
+                BackColor = Color.Transparent
+
+            };
+            linkLabel.Links.Add(0, linkLabel.Text.Length, LinkData2);
+            linkLabel.LinkClicked += LinkLabel2_LinkClicked;
 
             Controls.Add(linkLabel);
             linkLabel.BringToFront();
@@ -259,11 +276,21 @@ namespace SudokuMaster
             Process.Start(LinkData);
         }
 
+        private static void LinkLabel2_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            if (sender is LinkLabel linkLabel2)
+            {
+                linkLabel2.LinkVisited = false;
+            }
+
+            Process.Start(LinkData2);
+        }
+
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             int y1, y2;
 
-            // draw the horizontal lines
+            // draw the horizontal _lines
             var x1 = 1 * (CellWidth + 1) + XOffset - 1;
             var x2 = 9 * (CellWidth + 1) + XOffset + CellWidth;
             for (var r = 1; r <= 10; r += 3)
@@ -273,7 +300,7 @@ namespace SudokuMaster
                 e.Graphics.DrawLine(Pens.Black, x1, y1, x2, y2);
             }
 
-            // draw the vertical lines
+            // draw the vertical _lines
             y1 = 1 * (CellHeight + 1) + YOffset - 1;
             y2 = 9 * (CellHeight + 1) + YOffset + CellHeight;
             for (var c = 1; c <= 10; c += 3)
@@ -284,26 +311,23 @@ namespace SudokuMaster
             }
         }
 
-        public void ExitToolStripMenuItem_Click(object sender, EventArgs e)
+        private static void ExitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            //GetGameSaveInfo();
             Application.Exit();
         }
 
-        public void OpenToolStripMenuItem_Click(object sender, EventArgs e)
+        private void OpenToolStripMenuItem_Click(object sender, EventArgs e)
         {
-
-            // ask user if they want to save their current game to disk if any
-            // if (GetSaveGameResult()) return;
-
             // initialize arrays
-            StartNewGame();
+            _sudoku.StartNewGame();
 
             ClearLabelValues();
 
+
+
             // load the game from disk and reset CurrentGameState
-            var contents = CurrentGameState = _sudoku.LoadGameFromDisk();
-            _Form1.Text = SavedFileName;
+            var contents = _sudoku.CurrentGameState = _sudoku.LoadGameFromDisk();
+            _Form1.Text = _sudoku.SavedFileName;
 
             // set up the board with the saved game
             var counter = 0;
@@ -313,15 +337,30 @@ namespace SudokuMaster
                 {
                     var value = int.Parse(contents[counter].ToString());
                     counter++;
-                    SetCell(col, row, value);
+                    _sudoku.SetCell(col, row, value);
                 }
             }
 
+            // reset the button controls in the ToolStrip
+            foreach (var item in toolStrip1.Items)
+            {
+                if (!(item is ToolStripButton button))
+                {
+                    continue;
+                }
+
+                button.Checked = false;
+                button.AutoToolTip = false;
+                button.ToolTipText = string.Empty;
+            }
+
+            toolStripButton1.Checked = true;
             _sudoku.ShowMarkups();
+
 
         }
 
-        public void InitializeBoard()
+        private void InitializeBoard()
         {
             // used to store the location of the cell
             var location = new Point();
@@ -347,7 +386,7 @@ namespace SudokuMaster
                 }
         }
 
-        public void RedoToolStripMenuItem_Click(object sender, EventArgs e)
+        private void RedoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // if no more next move, then exit
             if (_sudoku.RedoMoves.Count == 0) return;
@@ -361,31 +400,33 @@ namespace SudokuMaster
             int row = int.Parse(str[1].ToString());
             int value = int.Parse(str[2].ToString());
 
-            SetCell(col, row, value);
+            _sudoku.SetCell(col, row, value);
             SetText($@"Value reinserted at ({col},{row})");
         }
 
-        public void SaveAsToolStripMenuItem_Click(object sender, EventArgs e)
+        private void SaveAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!GameHasStarted)
+            if (!_sudoku.GameHasStarted)
             {
                 Console.Beep();
                 SetStatus(@"Game not started yet.");
                 return;
             }
 
-            _sudoku.SaveGameToDisk(true);
+            const bool saveAs = true;
+            _sudoku.SaveGameToDisk(saveAs);
         }
 
-        public void SaveToolStripMenuItem_Click(object sender, EventArgs e)
+        private void SaveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!GameHasStarted)
+            if (!_sudoku.GameHasStarted)
             {
                 SetStatus(@"Game not started yet.");
                 return;
             }
 
-            _sudoku.SaveGameToDisk(false);
+            const bool saveAs = false;
+            _sudoku.SaveGameToDisk(saveAs);
         }
 
         private void ToolStripButton_Click(object sender, EventArgs e)
@@ -412,7 +453,7 @@ namespace SudokuMaster
 
         }
 
-        public void UndoToolStripMenuItem_Click(object sender, EventArgs e)
+        private void UndoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // if no previous moves, then exit
             if (_sudoku.Moves.Count == 0) return;
@@ -426,82 +467,16 @@ namespace SudokuMaster
             int col = int.Parse(s[0].ToString());
             int row = int.Parse(s[1].ToString());
 
-            SetCell(col, row, 0);
+            _sudoku.SetCell(col, row, 0);
             SetStatus($@"Value removed at ({col},{row}).");
         }
 
         private void BtnViewCandidates_Click(object sender, EventArgs e)
         {
             _sudoku.CheckCandidates();
-            TxtActivities.SelectionStart = TxtActivities.TextLength;
-            TxtActivities.ScrollToCaret();
+            RichTextBox1.SelectionStart = RichTextBox1.TextLength;
+            RichTextBox1.ScrollToCaret();
 
-        }
-
-        public void SetCell(int col, int row, int value)
-        {
-            var control = Controls.Find($"{col}{row}", true).FirstOrDefault();
-            var cellLabel = (CustomLabel)control;
-            if (cellLabel == null) return;
-
-            // save the value in the array
-            _sudoku.CellValues[col, row] = value;
-            var counter1 = 0;
-            var counter2 = 0;
-            var counter3 = 0;
-            // if erasing a cell, you need to reset the possible values for all cells
-            if (value == 0)
-            {
-                foreach (int r in Enumerable.Range(1, 9))
-                {
-                    foreach (int c in Enumerable.Range(1, 9))
-                    {
-                        if (_sudoku.CellValues[c, r] == 0)
-                        {
-                            _sudoku.Candidates[c, r] = string.Empty;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                _sudoku.Candidates[col, row] = value.ToString();
-            }
-
-            // set the properties for the label
-            if (value == 0 && cellLabel.Value == null)
-            {
-
-                cellLabel.Value = value;
-                cellLabel.IsEraseable = true;
-                cellLabel.BackColor = Color.LightYellow;
-                cellLabel.ForeColor = Color.Black;
-                cellLabel.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
-                counter1++;
-                _log.Info($"Counter 1 = {counter1}{col},{row}({value} > 0 && {cellLabel.Value} != null)");
-            }
-            else if (value > 0 && cellLabel.Value == null)
-            {
-                cellLabel.Value = value;
-                cellLabel.IsEraseable = false;
-                cellLabel.BackColor = Color.LightSteelBlue;
-                cellLabel.ForeColor = Color.Blue;
-                cellLabel.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
-                counter2++;
-                _log.Info($"Counter 2 = {counter2}{col},{row}({value} > 0 && {cellLabel.Value} != null)");
-            }
-            else if (value > 0 && cellLabel.IsEraseable)
-            {
-                cellLabel.Value = value;
-                cellLabel.BackColor = Color.LightYellow;
-                cellLabel.ForeColor = Color.Black;
-                cellLabel.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
-                counter3++;
-                _log.Info($"Counter 3 = {counter3}{col},{row}({value} > 0 && {cellLabel.Value} != null)");
-            }
-
-
-            cellLabel.Text = value.ToString();
         }
 
         private void ClearLabelValues()
@@ -525,10 +500,21 @@ namespace SudokuMaster
             SetStatus($@"Time Elapsed {eTime.Hours:00}:{eTime.Minutes:00}:{eTime.Seconds:00}");
         }
 
-        private void BtnCheckValues_Click(object sender, EventArgs e)
+        private void ButtonViewMarkups_Click(object sender, EventArgs e)
         {
-            _sudoku.CheckValues();
+            _sudoku.ViewMarkups();
         }
 
+        private void ButtonPrintText_Click(object sender, EventArgs e)
+        {
+            if (printDialog1.ShowDialog() == DialogResult.OK)
+            {
+                printDocument1.Print();
+            }
+        }
+
+
+
     }
+
 }
