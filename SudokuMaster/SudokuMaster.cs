@@ -12,6 +12,7 @@ using log4net.Config;
 
 namespace SudokuMaster
 {
+
     public class CustomLabel : Label
     {
         public bool IsEraseable { get; set; }
@@ -26,13 +27,20 @@ namespace SudokuMaster
         private const int SmallFontSize = 6;
         private const int LargeFontSize = 10;
 
+        private int StartColumn { get; set; } = 1;
+        private int StartRow { get; set; } = 1;
+        private int StartRegion { get; set; } = 1;
+
         private readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private readonly string[,] Candidates = new string[10, 10];
 
+
         // stacks to keep track of all the moves
         public Stack<string> Moves;
         public Stack<string> RedoMoves;
+
+
 
         public Sudoku()
         {
@@ -47,9 +55,9 @@ namespace SudokuMaster
 
         public bool GameHasStarted { get; private set; }
 
-        private int SelectedColumn { get; set; } = 1;
+        //private int SelectedColumn { get; set; } = 1;
 
-        private int SelectedRow { get; set; } = 1;
+        //private int SelectedRow { get; set; } = 1;
 
         // used to represent the values in the grid
         public void ClearBoard()
@@ -151,87 +159,78 @@ namespace SudokuMaster
                 : string.Empty;
         }
 
-        private static bool IsNumeric(string input, out int number)
-        {
-            return int.TryParse(input, out number);
-        }
-
         public void SudokuHandler(object sender)
         {
-            var f = Form1._Form1;
+            var form1 = Form1._Form1;
 
             // check to see if game has started
             if (!GameHasStarted)
             {
-                f.SetStatus(@"Click File->New to start a new game or File->Open to load an existing game", true);
+                form1.SetStatus(@"Click File->New to start a new game or File->Open to load an existing game", true);
                 return;
             }
 
-            if (sender is CustomLabel label)
+            var label = (CustomLabel)sender;
+            if (label == null) return;
+
+            var col = int.Parse(label.Name.Substring(0, 1));
+            var row = int.Parse(label.Name.Substring(1, 1));
+
+
+            // if cell is not eraseable then return
+            if (label.IsEraseable == false)
             {
-                var col = SelectedColumn = int.Parse(label.Name.Substring(0, 1));
-                var row = SelectedRow = int.Parse(label.Name.Substring(1, 1));
-                var value = f.SelectedNumber;
-                if (FilterOutReturns(label.Text).Trim().Length == 1 && IsNumeric(label.Text, out _))
-                {
-                    value = f.SelectedNumber = int.Parse(FilterOutReturns(label.Text).Trim());
-                }
+                form1.SetText(@"This cell cannot be erased.");
+                return;
+            }
 
-                // if cell is not eraseable then return
-                if (label.IsEraseable == false)
+            try
+            {
+                // if erasing a cell
+                if (form1.SelectedNumber == 0)
                 {
-                    f.SetText(@"This cell cannot be erased.");
-                    return;
-                }
-
-                try
-                {
-                    // if erasing a cell
-                    if (value == 0)
+                    // if cell is empty then no need to erase
+                    if (CellValues[col, row] == 0)
                     {
-                        // if cell is empty then no need to erase
-                        if (CellValues[SelectedColumn, SelectedRow] == 0)
-                        {
-                            f.SetStatus(@"Cell is empty so no need to erase");
-                            return;
-                        }
-
-                        // save the value in the array
-                        SetCell(col, row, value);
-                        f.SetText($@"{value} erased at ({col},{row})");
+                        form1.SetStatus(@"Cell is empty so no need to erase");
+                        return;
                     }
 
-                    else
+                    // save the value in the array
+                    SetCell(col, row, form1.SelectedNumber);
+                    form1.SetText($@"{form1.SelectedNumber} erased at ({col},{row})");
+                }
+
+                else
+                {
+                    // if move is not valid then return
+                    if (!IsMoveValid(col, row, form1.SelectedNumber))
                     {
-                        // if move is not valid then return
-                        if (!IsMoveValid(col, row, value))
-                        {
-                            f.SetText($@"Invalid move at ({col},{row})");
-                            return;
-                        }
-
-                        SetCell(col, row, value);
-                        f.SetText($"Saved {value} to ({col},{row}) successfully.");
-
-                        // save the value in the array
-                        CellValues[col, row] = value;
-
-                        // saves the move into the stack
-                        Moves.Push($"{label.Name} {col}{row} pushed onto Moves stack.");
-
-                        ShowMarkups();
+                        form1.SetText($@"Invalid move at ({col},{row})");
+                        return;
                     }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
 
-                if (IsPuzzleSolved())
-                {
-                    f.StopTimer();
-                    f.SetStatus2(@"*****Puzzle Solved*****Game Ended*****", true);
+                    SetCell(col, row, form1.SelectedNumber);
+                    form1.SetText($"Saved {form1.SelectedNumber} to ({col},{row}) successfully.");
+
+                    // save the value in the array
+                    CellValues[col, row] = form1.SelectedNumber;
+
+                    // saves the move into the stack
+                    Moves.Push($"{label.Name}{form1.SelectedNumber}");
+
+                    ShowMarkups();
                 }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
+            if (IsPuzzleSolved())
+            {
+                form1.StopTimer();
+                form1.SetStatus2(@"*****Puzzle Solved*****Game Ended*****", true);
             }
         }
 
@@ -343,7 +342,7 @@ namespace SudokuMaster
             var line = new string('*', 47);
             var shortLine = new string('*', 40);
             var sb = new StringBuilder();
-            var f = Form1._Form1;
+            var form1 = Form1._Form1;
 
             sb.AppendLine(line);
             foreach (var r in Enumerable.Range(1, 9))
@@ -368,13 +367,13 @@ namespace SudokuMaster
             }
 
             sb.AppendLine();
-            f.SetText(sb.ToString());
+            form1.SetText(sb.ToString());
         }
 
         public void CheckValues()
         {
             var sb = new StringBuilder();
-            var f = Form1._Form1;
+            var form1 = Form1._Form1;
             foreach (var row in Enumerable.Range(1, 9))
             {
                 foreach (var col in Enumerable.Range(1, 9))
@@ -386,25 +385,25 @@ namespace SudokuMaster
             }
 
 
-            f.SetText(sb.ToString());
+            form1.SetText(sb.ToString());
         }
 
         public void ShowMarkups()
         {
-            var f = Form1._Form1;
+            var form1 = Form1._Form1;
 
             foreach (var c in Enumerable.Range(1, 9))
             {
                 foreach (var r in Enumerable.Range(1, 9))
                 {
-                    SetMarkups(f, c, r);
+                    SetMarkups(form1, c, r);
                 }
             }
         }
 
-        private void SetMarkups(Form1 f, int c, int r)
+        private void SetMarkups(Form1 form1, int c, int r)
         {
-            var control = f.Controls.Find($"{c}{r}", true).FirstOrDefault();
+            var control = form1.Controls.Find($"{c}{r}", true).FirstOrDefault();
             var label = (CustomLabel)control;
             if (CellValues[c, r] == 0 && label != null)
             {
@@ -501,13 +500,46 @@ namespace SudokuMaster
             return isValid;
         }
 
-        public void ViewMarkups()
+        public void ViewMarkupsByRow()
         {
             var sb = new StringBuilder();
-
+            var form1 = Form1._Form1;
+            sb.Append(new string('*', 80));
+            sb.AppendLine();
             foreach (var r in Enumerable.Range(1, 9))
             {
+                sb.Append($"(row {r}) ");
                 foreach (var c in Enumerable.Range(1, 9))
+                {
+                    var control = form1.Controls.Find($"{c}{r}", true).FirstOrDefault();
+                    var label = (CustomLabel)control;
+                    if (label == null) return;
+                    if (CellValues[c, r] == 0)
+                    {
+                        label.Font = new Font(SmallFontName, SmallFontSize, FontStyle.Bold);
+                        sb.Append($"<{FilterOutReturns(CalculatePossibleValues(c, r).Trim()).Trim()}>");
+                    }
+                    else if (CellValues[c, r] > 0)
+                    {
+                        label.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
+                        sb.Append(CellValues[c, r]);
+                    }
+                }
+                sb.AppendLine();
+            }
+
+            ViewMarkupsByColumn(sb);
+
+        }
+
+        private void ViewMarkupsByColumn(StringBuilder sb)
+        {
+            sb.Append(new string('*', 80));
+            sb.AppendLine();
+            foreach (var c in Enumerable.Range(1, 9))
+            {
+                sb.Append($"(col {c}) ");
+                foreach (var r in Enumerable.Range(1, 9))
                 {
                     var control = Form1._Form1.Controls.Find($"{c}{r}", true).FirstOrDefault();
                     var label = (CustomLabel)control;
@@ -515,7 +547,7 @@ namespace SudokuMaster
                     if (CellValues[c, r] == 0)
                     {
                         label.Font = new Font(SmallFontName, SmallFontSize, FontStyle.Bold);
-                        sb.Append($"[{FilterOutReturns(CalculatePossibleValues(c, r).Trim()).Trim()}]");
+                        sb.Append($"<{FilterOutReturns(CalculatePossibleValues(c, r).Trim()).Trim()}>");
                     }
                     else if (CellValues[c, r] > 0)
                     {
@@ -527,7 +559,225 @@ namespace SudokuMaster
                 sb.AppendLine();
             }
 
-            Form1._Form1.RichTextBox1.Text = sb.ToString();
+            ViewMarkupsByRegion(sb);
+
+        }
+
+        private void ViewMarkupsByRegion(StringBuilder sb)
+        {
+            sb.Append(new string('*', 80));
+            sb.AppendLine();
+            var form1 = Form1._Form1;
+
+            sb.Append("(reg 1) ");
+            foreach (var r in Enumerable.Range(1, 3))
+            {
+                foreach (var c in Enumerable.Range(1, 3))
+                {
+                    var control = form1.Controls.Find($"{c}{r}", true).FirstOrDefault();
+                    var label = (CustomLabel)control;
+                    if (label == null) return;
+                    if (CellValues[c, r] == 0)
+                    {
+                        label.Font = new Font(SmallFontName, SmallFontSize, FontStyle.Bold);
+                        sb.Append($"<{FilterOutReturns(CalculatePossibleValues(c, r).Trim()).Trim()}>");
+                    }
+                    else if (CellValues[c, r] > 0)
+                    {
+                        label.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
+                        sb.Append(CellValues[c, r]);
+                    }
+                }
+
+            }
+
+            sb.AppendLine();
+            sb.Append("(reg 2) ");
+            foreach (var r in Enumerable.Range(1, 3))
+            {
+                foreach (var c in Enumerable.Range(4, 3))
+                {
+                    var control = form1.Controls.Find($"{c}{r}", true).FirstOrDefault();
+                    var label = (CustomLabel)control;
+                    if (label == null) return;
+                    if (CellValues[c, r] == 0)
+                    {
+                        label.Font = new Font(SmallFontName, SmallFontSize, FontStyle.Bold);
+                        sb.Append($"<{FilterOutReturns(CalculatePossibleValues(c, r).Trim()).Trim()}>");
+                    }
+                    else if (CellValues[c, r] > 0)
+                    {
+                        label.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
+                        sb.Append(CellValues[c, r]);
+                    }
+                }
+
+            }
+
+            sb.AppendLine();
+            sb.Append("(reg 3) ");
+            foreach (var r in Enumerable.Range(1, 3))
+            {
+                foreach (var c in Enumerable.Range(7, 3))
+                {
+                    var control = form1.Controls.Find($"{c}{r}", true).FirstOrDefault();
+                    var label = (CustomLabel)control;
+                    if (label == null) return;
+                    if (CellValues[c, r] == 0)
+                    {
+                        label.Font = new Font(SmallFontName, SmallFontSize, FontStyle.Bold);
+                        sb.Append($"<{FilterOutReturns(CalculatePossibleValues(c, r).Trim()).Trim()}>");
+                    }
+                    else if (CellValues[c, r] > 0)
+                    {
+                        label.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
+                        sb.Append(CellValues[c, r]);
+                    }
+                }
+
+            }
+
+            sb.AppendLine();
+            sb.Append("(reg 4) ");
+            foreach (var r in Enumerable.Range(4, 3))
+            {
+                foreach (var c in Enumerable.Range(1, 3))
+                {
+                    var control = form1.Controls.Find($"{c}{r}", true).FirstOrDefault();
+                    var label = (CustomLabel)control;
+                    if (label == null) return;
+                    if (CellValues[c, r] == 0)
+                    {
+                        label.Font = new Font(SmallFontName, SmallFontSize, FontStyle.Bold);
+                        sb.Append($"<{FilterOutReturns(CalculatePossibleValues(c, r).Trim()).Trim()}>");
+                    }
+                    else if (CellValues[c, r] > 0)
+                    {
+                        label.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
+                        sb.Append(CellValues[c, r]);
+                    }
+                }
+
+            }
+
+            sb.AppendLine();
+            sb.Append("(reg 5) ");
+            foreach (var r in Enumerable.Range(4, 3))
+            {
+                foreach (var c in Enumerable.Range(4, 3))
+                {
+                    var control = form1.Controls.Find($"{c}{r}", true).FirstOrDefault();
+                    var label = (CustomLabel)control;
+                    if (label == null) return;
+                    if (CellValues[c, r] == 0)
+                    {
+                        label.Font = new Font(SmallFontName, SmallFontSize, FontStyle.Bold);
+                        sb.Append($"<{FilterOutReturns(CalculatePossibleValues(c, r).Trim()).Trim()}>");
+                    }
+                    else if (CellValues[c, r] > 0)
+                    {
+                        label.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
+                        sb.Append(CellValues[c, r]);
+                    }
+                }
+
+            }
+
+            sb.AppendLine();
+            sb.Append("(reg 6) ");
+            foreach (var r in Enumerable.Range(4, 3))
+            {
+                foreach (var c in Enumerable.Range(7, 3))
+                {
+                    var control = form1.Controls.Find($"{c}{r}", true).FirstOrDefault();
+                    var label = (CustomLabel)control;
+                    if (label == null) return;
+                    if (CellValues[c, r] == 0)
+                    {
+                        label.Font = new Font(SmallFontName, SmallFontSize, FontStyle.Bold);
+                        sb.Append($"<{FilterOutReturns(CalculatePossibleValues(c, r).Trim()).Trim()}>");
+                    }
+                    else if (CellValues[c, r] > 0)
+                    {
+                        label.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
+                        sb.Append(CellValues[c, r]);
+                    }
+                }
+
+            }
+            
+            sb.AppendLine();
+            sb.Append("(reg 7) ");
+            foreach (var r in Enumerable.Range(7, 3))
+            {
+                foreach (var c in Enumerable.Range(1, 3))
+                {
+                    var control = form1.Controls.Find($"{c}{r}", true).FirstOrDefault();
+                    var label = (CustomLabel)control;
+                    if (label == null) return;
+                    if (CellValues[c, r] == 0)
+                    {
+                        label.Font = new Font(SmallFontName, SmallFontSize, FontStyle.Bold);
+                        sb.Append($"<{FilterOutReturns(CalculatePossibleValues(c, r).Trim()).Trim()}>");
+                    }
+                    else if (CellValues[c, r] > 0)
+                    {
+                        label.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
+                        sb.Append(CellValues[c, r]);
+                    }
+                }
+
+            }
+
+            sb.AppendLine();
+            sb.Append("(reg 8) ");
+            foreach (var r in Enumerable.Range(7, 3))
+            {
+                foreach (var c in Enumerable.Range(4, 3))
+                {
+                    var control = form1.Controls.Find($"{c}{r}", true).FirstOrDefault();
+                    var label = (CustomLabel)control;
+                    if (label == null) return;
+                    if (CellValues[c, r] == 0)
+                    {
+                        label.Font = new Font(SmallFontName, SmallFontSize, FontStyle.Bold);
+                        sb.Append($"<{FilterOutReturns(CalculatePossibleValues(c, r).Trim()).Trim()}>");
+                    }
+                    else if (CellValues[c, r] > 0)
+                    {
+                        label.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
+                        sb.Append(CellValues[c, r]);
+                    }
+                }
+
+            }
+
+            sb.AppendLine();
+            sb.Append("(reg 9) ");
+            foreach (var r in Enumerable.Range(7, 3))
+            {
+                foreach (var c in Enumerable.Range(7, 3))
+                {
+                    var control = form1.Controls.Find($"{c}{r}", true).FirstOrDefault();
+                    var label = (CustomLabel)control;
+                    if (label == null) return;
+                    if (CellValues[c, r] == 0)
+                    {
+                        label.Font = new Font(SmallFontName, SmallFontSize, FontStyle.Bold);
+                        sb.Append($"<{FilterOutReturns(CalculatePossibleValues(c, r).Trim()).Trim()}>");
+                    }
+                    else if (CellValues[c, r] > 0)
+                    {
+                        label.Font = new Font(LargeFontName, LargeFontSize, FontStyle.Bold);
+                        sb.Append(CellValues[c, r]);
+                    }
+                }
+
+            }
+
+            sb.Append(new string('*', 80));
+            form1.RichTextBox1.Text = sb.ToString();
+
         }
 
         public void SaveGameToDisk(bool saveAs)

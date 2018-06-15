@@ -41,7 +41,7 @@ namespace SudokuMaster
         private readonly Sudoku _sudoku = new Sudoku();
 
         // number the user selected from the toolStrip
-        public int SelectedNumber { get; set; } = 1;
+        public int SelectedNumber { get; private set; } = 1;
 
         public static Form1 _Form1;
 
@@ -103,10 +103,6 @@ namespace SudokuMaster
 
         }
 
-        private void CandidatesToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            _sudoku.CheckCandidates();
-        }
 
         private void Cell_Click(object sender)
         {
@@ -141,10 +137,16 @@ namespace SudokuMaster
             editItem.DropDownItems.Add(undoSubItem);
             editItem.DropDownItems.Add(redoSubItem);
 
+            // create the Tools menu
             var toolsItem = new ToolStripMenuItem("&Tools");
-            var CandidatesToolStripMenuItem = new ToolStripMenuItem("Check &Candidates");
-            CandidatesToolStripMenuItem.Click += CandidatesToolStripMenuItem_Click;
-            toolsItem.DropDownItems.Add(CandidatesToolStripMenuItem);
+
+            var CheckValuesToolStripMenuItem = new ToolStripMenuItem("Check &Values");
+            CheckValuesToolStripMenuItem.Click += CheckValuesToolStripMenuItem_Click;
+            toolsItem.DropDownItems.Add(CheckValuesToolStripMenuItem);
+
+            var CheckCandidatesToolStripMenuItem = new ToolStripMenuItem("Check Can&didates");
+            CheckCandidatesToolStripMenuItem.Click += CheckCandidatesToolStripMenuItem_Click;
+            toolsItem.DropDownItems.Add(CheckCandidatesToolStripMenuItem);
 
             // create the Help menu
             var helpItem = new ToolStripMenuItem("&Help");
@@ -360,6 +362,11 @@ namespace SudokuMaster
 
         }
 
+        private void CheckValuesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _sudoku.CheckValues();
+        }
+
         private void InitializeBoard()
         {
             // used to store the location of the cell
@@ -479,6 +486,11 @@ namespace SudokuMaster
 
         }
 
+        private void CheckCandidatesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _sudoku.CheckCandidates();
+        }
+
         private void ClearLabelValues()
         {
             foreach (var control in Controls)
@@ -502,7 +514,7 @@ namespace SudokuMaster
 
         private void ButtonViewMarkups_Click(object sender, EventArgs e)
         {
-            _sudoku.ViewMarkups();
+            _sudoku.ViewMarkupsByRow();
         }
 
         private void ButtonPrintText_Click(object sender, EventArgs e)
