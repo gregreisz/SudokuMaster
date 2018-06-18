@@ -41,7 +41,7 @@ namespace SudokuMaster
         private readonly Sudoku _sudoku = new Sudoku();
 
         // number the user selected from the toolStrip
-        public int SelectedNumber { get; private set; } = 1;
+        public int SelectedNumber { get; set; } = 1;
 
         public static Form1 _Form1;
 
@@ -73,8 +73,7 @@ namespace SudokuMaster
             toolStripStatusLabel2.Text = value;
         }
 
-
-        // time that the game starts
+        // time that the game started
         public DateTime StartTime { get; set; }
 
         public void SetText(string input)
@@ -102,7 +101,6 @@ namespace SudokuMaster
             RichTextBox1.ScrollToCaret();
 
         }
-
 
         private void Cell_Click(object sender)
         {
@@ -177,12 +175,50 @@ namespace SudokuMaster
             printDocument1.PrintPage += PrintDocument1_BeginPrint;
             printDocument1.PrintPage += PrintDocument1_PrintPage;
 
-            CreateMainMenu();
-            _sudoku.ClearBoard();
-            InitializeBoard();
+            //CreateMainMenu();
+            //_sudoku.ClearBoard();
+            //InitializeBoard();
 
-            AddLinkLabel();
-            AddLinkLabel2();
+            //AddLinkLabel();
+            //AddLinkLabel2();
+
+            SetLabelProperties();
+        }
+
+        private void SetLabelProperties()
+        {
+            int  maxSize = 292;
+            int  minSize = 292;
+
+            tableLayoutPanel1.Padding = new Padding(0);
+            tableLayoutPanel1.Margin = new Padding(0);
+            tableLayoutPanel1.ColumnCount = 9;
+            tableLayoutPanel1.RowCount = 9;
+            tableLayoutPanel1.Enabled = true;
+            tableLayoutPanel1.Dock = DockStyle.None;
+            tableLayoutPanel1.BackColor = Color.Orange;
+            tableLayoutPanel1.BorderStyle = BorderStyle.Fixed3D;
+            tableLayoutPanel1.MaximumSize = new Size(maxSize, maxSize);
+            tableLayoutPanel1.MinimumSize = new Size(minSize, minSize);
+
+            foreach (var cl in tableLayoutPanel1.Controls)
+            {
+                if (cl is CustomLabel label)
+                {
+                    label.Padding = new Padding(0);
+                    label.Margin = new Padding(0);
+                    label.Anchor = Anchor & AnchorStyles.Left & AnchorStyles.Right & AnchorStyles.Top & AnchorStyles.Bottom;
+                    label.BackColor = Color.LightYellow;
+                    label.ForeColor = Color.Black;
+                    label.BorderStyle = BorderStyle.Fixed3D;
+                    label.HasNakedSingle = false;
+                    var size = new Size(32, 32);
+                    label.MaximumSize = size;
+                    label.MinimumSize = size;
+                    label.Dock = DockStyle.None;
+
+                }
+            }
         }
 
         private void PrintDocument1_BeginPrint(object sender, EventArgs e)
@@ -198,7 +234,6 @@ namespace SudokuMaster
             }
 
         }
-
 
         private void PrintDocument1_PrintPage(object sender, PrintPageEventArgs e)
         {
@@ -217,7 +252,6 @@ namespace SudokuMaster
                 }
             }
         }
-
 
         private void AddLinkLabel()
         {
@@ -288,30 +322,30 @@ namespace SudokuMaster
             Process.Start(LinkData2);
         }
 
-        private void Form1_Paint(object sender, PaintEventArgs e)
-        {
-            int y1, y2;
+        //private void Form1_Paint(object sender, PaintEventArgs e)
+        //{
+        //    int y1, y2;
 
-            // draw the horizontal _lines
-            var x1 = 1 * (CellWidth + 1) + XOffset - 1;
-            var x2 = 9 * (CellWidth + 1) + XOffset + CellWidth;
-            for (var r = 1; r <= 10; r += 3)
-            {
-                y1 = r * (CellHeight + 1) + YOffset - 1;
-                y2 = y1;
-                e.Graphics.DrawLine(Pens.Black, x1, y1, x2, y2);
-            }
+        //    // draw the horizontal _lines
+        //    var x1 = 1 * (CellWidth + 1) + XOffset - 1;
+        //    var x2 = 9 * (CellWidth + 1) + XOffset + CellWidth;
+        //    for (var r = 1; r <= 10; r += 3)
+        //    {
+        //        y1 = r * (CellHeight + 1) + YOffset - 1;
+        //        y2 = y1;
+        //        e.Graphics.DrawLine(Pens.Black, x1, y1, x2, y2);
+        //    }
 
-            // draw the vertical _lines
-            y1 = 1 * (CellHeight + 1) + YOffset - 1;
-            y2 = 9 * (CellHeight + 1) + YOffset + CellHeight;
-            for (var c = 1; c <= 10; c += 3)
-            {
-                x1 = c * (CellWidth + 1) + XOffset - 1;
-                x2 = x1;
-                e.Graphics.DrawLine(Pens.Black, x1, y1, x2, y2);
-            }
-        }
+        //    // draw the vertical _lines
+        //    y1 = 1 * (CellHeight + 1) + YOffset - 1;
+        //    y2 = 9 * (CellHeight + 1) + YOffset + CellHeight;
+        //    for (var c = 1; c <= 10; c += 3)
+        //    {
+        //        x1 = c * (CellWidth + 1) + XOffset - 1;
+        //        x2 = x1;
+        //        e.Graphics.DrawLine(Pens.Black, x1, y1, x2, y2);
+        //    }
+        //}
 
         private static void ExitToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -357,7 +391,7 @@ namespace SudokuMaster
             }
 
             toolStripButton1.Checked = true;
-            _sudoku.ShowMarkups();
+            //_sudoku.ShowMarkups();
 
 
         }
@@ -480,7 +514,7 @@ namespace SudokuMaster
 
         private void BtnViewCandidates_Click(object sender, EventArgs e)
         {
-            _sudoku.CheckCandidates();
+            _sudoku.DisplayCandidates();
             RichTextBox1.SelectionStart = RichTextBox1.TextLength;
             RichTextBox1.ScrollToCaret();
 
@@ -488,7 +522,7 @@ namespace SudokuMaster
 
         private void CheckCandidatesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            _sudoku.CheckCandidates();
+            _sudoku.DisplayCandidates();
         }
 
         private void ClearLabelValues()
@@ -514,8 +548,10 @@ namespace SudokuMaster
 
         private void ButtonViewMarkups_Click(object sender, EventArgs e)
         {
-            _sudoku.ViewMarkupsByRow();
+            //_sudoku.ViewMarkups();
+            _sudoku.ShowMarkups();
         }
+
 
         private void ButtonPrintText_Click(object sender, EventArgs e)
         {
@@ -524,8 +560,6 @@ namespace SudokuMaster
                 printDocument1.Print();
             }
         }
-
-
 
     }
 
